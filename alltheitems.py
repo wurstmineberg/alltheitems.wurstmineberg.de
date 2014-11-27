@@ -31,7 +31,7 @@ def show_index():
     return bottle.static_file('index.html', root=document_root)
 
 @application.error(404)
-def error_404():
+def error_404(error):
     return bottle.static_file('404.html', root=document_root)
 
 if __name__ == '__main__':
