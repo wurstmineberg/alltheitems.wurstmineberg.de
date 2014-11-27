@@ -7,8 +7,8 @@ Wurstmineberg: All The Items
 import bottle
 
 application = bottle.Bottle()
-assets_root = '/var/www/assets.wurstmineberg.de'
-document_root = '/var/www/alltheitems.wurstmineberg.de'
+assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master'
+document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master'
 
 @application.route('/alltheitems.png')
 def image_alltheitems():
