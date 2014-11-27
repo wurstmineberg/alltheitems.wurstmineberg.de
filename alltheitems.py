@@ -15,6 +15,11 @@ def image_alltheitems():
     """The “Craft ALL the items!” image."""
     return bottle.static_file('alltheitems.png', root=document_root)
 
+@application.route('/alltheitems2.png')
+def image_alltheitems2():
+    """The “Craft ALL the items?” image."""
+    return bottle.static_file('alltheitems2.png', root=document_root)
+
 @application.route('/favicon.ico')
 def show_favicon():
     """The favicon, a small version of the Wurstpick image. Original Wurstpick image by katethie, icon version by someone (maybe bl1nk)."""
@@ -24,6 +29,10 @@ def show_favicon():
 def show_index():
     """The index page."""
     return bottle.static_file('index.html', root=document_root)
+
+@application.error(404)
+def error_404():
+    return bottle.static_file('404.html', root=document_root)
 
 if __name__ == '__main__':
     bottle.run(app=application, host='0.0.0.0', port=8081)
