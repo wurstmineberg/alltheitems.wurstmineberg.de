@@ -4,6 +4,10 @@
 Wurstmineberg: All The Items
 """
 
+import sys
+
+sys.path.append('/opt/py')
+
 import api
 import bottle
 
