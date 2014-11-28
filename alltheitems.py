@@ -11,6 +11,8 @@ sys.path.append('/opt/py')
 import api
 import bottle
 
+bottle.debug()
+
 assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master'
 document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master'
 
