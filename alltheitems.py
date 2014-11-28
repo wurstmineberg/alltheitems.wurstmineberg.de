@@ -77,11 +77,10 @@ def footer():
 ERROR_PAGE_TEMPLATE = """
 %try:
     %from bottle import HTTP_CODES, request
-""" + header(title='Error: {{e.status}}') + """
-                <h2>Error {{e.status}}: {{HTTP_CODES.get(e.status, '(unknown error)')}}</h2>
+""" + header(title='Error {{e.status_code}}') + """
+                <h2>Error {{e.status_code}}: {{HTTP_CODES.get(e.status_code, '(unknown error)')}}</h2>
                 <p><img src="/assets/alltheitems2.png" alt="Craft ALL the items?" title="original image by Allie Brosh of Hyperbole and a Half" /></p>
-                <p>Sorry, the requested URL <tt>{{repr(request.url)}}</tt>
-                   caused an error:</p>
+                <p>Sorry, the requested URL <tt>{{repr(request.url)}}</tt> caused an error:</p>
                 <pre>{{e.body}}</pre>
                 %if e.exception:
                   <h2>Exception:</h2>
