@@ -55,7 +55,7 @@ def header(*, title='Wurstmineberg: All The Items'):
             <div class="container" style="text-align: center;">
     """.format(title=title)
 
-def footer():
+def footer(*, linkify_headers=False):
     return """
             </div>
             <hr />
@@ -67,7 +67,7 @@ def footer():
             <script src="http://assets.wurstmineberg.de/js/common.js"></script>
             <script type="text/javascript">
                 // run by default
-                //linkify_headers();
+    """ + ('linkify_headers();' if linkify_headers else '') + """
                 //configure_navigation();
                 set_anchor_height();
                 $(".use-tooltip").tooltip();
@@ -161,7 +161,7 @@ def cloud_index():
     for y, floor in sorted(floors.items(), key=lambda tup: tup[0]):
         yield bottle.template("""
             %import itertools
-            <h2>{{y}}{{Cloud.ordinal(y)}} floor (y={{73 - 10 * y}})</h2>
+            <h2 id="floor{{y}}">{{y}}{{Cloud.ordinal(y)}} floor (y={{73 - 10 * y}})</h2>
             <table class="item-table" style="margin-left: auto; margin-right: auto;">
                 %for x in range(-3, 4):
                     %if x > -3:
@@ -207,7 +207,7 @@ def cloud_index():
                 </tbody>
             </table>
         """, Cloud=wurstminebot.commands.Cloud, image=(lambda cloud_chest: item_image(item_in_cloud_chest(cloud_chest), link=cloud_chest['damage'], tooltip=True)), floor=floor, y=y)
-    yield footer()
+    yield footer(linkify_headers=True)
 
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():
