@@ -239,8 +239,14 @@ def show_item_by_damage(plugin, item_id, damage):
             {{item['stringID'].split(':')[0]}}:{{!'' if damage is None else '<a href="/item/{}/{}">'.format(plugin, item_id)}}{{':'.join(item['stringID'].split(':')[1:])}}{{!'' if damage is None else '</a>/{}'.format(damage)}}
         </p>
         %if damage is None:
+            <%
+                damage_values = sorted(int(damage) for damage in item.get('damageValues', {}))
+                if 0 not in damage_values:
+                    damage_values[:0] = [0]
+                end
+            %>
             <p>
-                Damage values: {{!' '.join(item_image(api.api_item_by_damage(plugin + ':' + item_id, damage), link=damage, tooltip=True) for damage in sorted(int(damage) for damage in item['damageValues']))}}
+                Damage values: {{!' '.join(item_image(api.api_item_by_damage(plugin + ':' + item_id, damage), link=damage, tooltip=True) for damage in damage_values)}}
             </p>
         %end
     """, api=api, item_image=item_image, plugin=plugin, item_id=item_id, item=item, damage=damage)
