@@ -74,6 +74,19 @@ def footer():
     </html>
     """
 
+def item_image(item_info, *, classes=None, tint=None, style=''):
+    if classes is None:
+        classes = []
+    if 'image' in item_info:
+        if item_info['image'].startswith('http://') or item_info['image'].startswith('https://'):
+            return '<img src="{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
+        elif tint is None:
+            return '<img src="http://assets.wurstmineberg.de/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
+        else:
+            return '<img style="background: url(http://api.wurstmineberg.de/minecraft/items/render/dyed-by-id/{}/{:06x}/png.png)" src="http://assets.wurstmineberg.de/img/grid-overlay/{}" class="{}" style="{}" />'.format(item_info['stringID'], tint, item_info['image'], ' '.join(classes), style)
+    else:
+        return '' #TODO replace with a “not found” placeholder image
+
 ERROR_PAGE_TEMPLATE = """
 %try:
     %from bottle import HTTP_CODES, request
@@ -103,6 +116,11 @@ class Bottle(bottle.Bottle):
 
 application = Bottle()
 
+@application.route('/cloud')
+def cloud_index():
+    """A page listing all Cloud corridors."""
+    pass #TODO
+
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():
     """The “Craft ALL the items!” image."""
@@ -123,11 +141,14 @@ def show_index():
     """The index page."""
     return bottle.static_file('static/index.html', root=document_root)
 
-@application.route('/item/<plugin>/<item_id>/<damage>')
+@application.route('/item/<plugin>/<item_id>/<damage:int>')
 def show_item_by_damage(plugin, item_id, damage):
     item = api.api_item_by_damage(item_id, damage)
     yield header()
-    yield '<h1>{}</h1>'.format(item['name'])
+    yield bottle.template("""
+        <h1 style="font-size: 44px;">{{!image}}&thinsp;{{item['name']}}</h1>
+        <p class="muted">{{item['stringID']}}{{'' if damage is None else '/{}'.format(damage)}}</p>
+    """, image=item_image(item, style='vertical-align: baseline;'), item=item, damage=damage)
     yield footer()
 
 @application.route('/item/<plugin>/<item_id>')
