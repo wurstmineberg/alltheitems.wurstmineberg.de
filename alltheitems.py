@@ -231,12 +231,19 @@ def show_index():
 
 @application.route('/item/<plugin>/<item_id>/<damage:int>')
 def show_item_by_damage(plugin, item_id, damage):
-    item = api.api_item_by_damage(item_id, damage)
+    item = api.api_item_by_damage(plugin + ':' + item_id, damage)
     yield header()
     yield bottle.template("""
-        <h1 style="font-size: 44px;">{{!image}}&thinsp;{{item['name']}}</h1>
-        <p class="muted">{{item['stringID']}}{{'' if damage is None else '/{}'.format(damage)}}</p>
-    """, image=item_image(item, style='vertical-align: baseline;'), item=item, damage=damage)
+        <h1 style="font-size: 44px;">{{!item_image(item, style='vertical-align: baseline;')}}&thinsp;{{item['name']}}</h1>
+        <p class="muted">
+            {{item['stringID'].split(':')[0]}}:{{!'' if damage is None else '<a href="/item/{}/{}">'.format(plugin, item_id)}}{{':'.join(item['stringID'].split(':')[1:])}}{{!'' if damage is None else '</a>/{}'.format(damage)}}
+        </p>
+        %if damage is None:
+            <p>
+                Damage values: {{!' '.join(item_image(api.api_item_by_damage(plugin + ':' + item_id, damage), link=damage, tooltip=True) for damage in sorted(int(damage) for damage in item['damageValues']))}}
+            </p>
+        %end
+    """, api=api, item_image=item_image, plugin=plugin, item_id=item_id, item=item, damage=damage)
     yield footer()
 
 @application.route('/item/<plugin>/<item_id>')
