@@ -10,6 +10,9 @@ sys.path.append('/opt/py')
 
 import api
 import bottle
+import json
+import os.path
+import wurstminebot.commands
 
 bottle.debug()
 
@@ -74,18 +77,35 @@ def footer():
     </html>
     """
 
-def item_image(item_info, *, classes=None, tint=None, style=''):
+def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', link=False, tooltip=False):
     if classes is None:
         classes = []
     if 'image' in item_info:
         if item_info['image'].startswith('http://') or item_info['image'].startswith('https://'):
-            return '<img src="{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
+            ret = '<img src="{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
         elif tint is None:
-            return '<img src="http://assets.wurstmineberg.de/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
+            ret = '<img src="http://assets.wurstmineberg.de/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
         else:
-            return '<img style="background: url(http://api.wurstmineberg.de/minecraft/items/render/dyed-by-id/{}/{:06x}/png.png)" src="http://assets.wurstmineberg.de/img/grid-overlay/{}" class="{}" style="{}" />'.format(item_info['stringID'], tint, item_info['image'], ' '.join(classes), style)
+            ret = '<img style="background: url(http://api.wurstmineberg.de/minecraft/items/render/dyed-by-id/{}/{:06x}/png.png)" src="http://assets.wurstmineberg.de/img/grid-overlay/{}" class="{}" style="{}" />'.format(item_info['stringID'], tint, item_info['image'], ' '.join(classes), style)
     else:
-        return '' #TODO replace with a “not found” placeholder image
+        ret = '<img src="http://assets.wurstmineberg.de/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style)
+    if tooltip:
+        ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
+    if link is False:
+        return ret
+    elif link is None or isinstance(link, int):
+        string_id = item_info['stringID'].split(':')
+        plugin = string_id[0]
+        string_id = ':'.join(string_id[1:])
+        if link is None:
+            return '<a href="/item/{}/{}">{}</a>'.format(plugin, string_id, ret)
+        else:
+            return '<a href="/item/{}/{}/{}">{}</a>'.format(plugin, string_id, link, ret)
+    else:
+        return '<a href="{}">{}</a>'.format(link, ret)
+
+def item_in_cloud_chest(cloud_chest):
+    return api.api_item_by_damage(cloud_chest['id'], cloud_chest['damage'])
 
 ERROR_PAGE_TEMPLATE = """
 %try:
@@ -119,7 +139,75 @@ application = Bottle()
 @application.route('/cloud')
 def cloud_index():
     """A page listing all Cloud corridors."""
-    pass #TODO
+    yield header()
+    yield '<p>The <a href="http://wiki.wurstmineberg.de/Cloud">Cloud</a> is the public item storage on <a href="http://wurstmineberg.de/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.wurstmineberg.de/SmartChest">SmartChests</a> in them:</p>'
+    yield """<style type="text/css">
+        .item-table td {
+            box-sizing: content-box;
+            height: 32px;
+            width: 32px;
+        }
+        
+        .item-table .left-sep {
+            border-left: 1px solid gray;
+        }
+    </style>"""
+    with open(os.path.join(assets_root, 'json/cloud.json')) as cloud_json:
+        cloud = json.load(cloud_json)
+    floors = {}
+    for x, corridor, y, floor, z, chest in wurstminebot.commands.Cloud.cloud_iter(cloud):
+        if y not in floors:
+            floors[y] = floor
+    for y, floor in sorted(floors.items(), key=lambda tup: tup[0]):
+        yield bottle.template("""
+            %import itertools
+            <h2>{{y}}{{Cloud.ordinal(y)}} floor (y={{73 - 10 * y}})</h2>
+            <table class="item-table" style="margin-left: auto; margin-right: auto;">
+                %for x in range(-3, 4):
+                    %if x > -3:
+                        <colgroup class="left-sep">
+                            <col />
+                            <col />
+                        </colgroup>
+                    %else:
+                        <colgroup>
+                            <col />
+                            <col />
+                        </colgroup>
+                    %end
+                %end
+                <tbody>
+                    %for z_left, z_right in zip(itertools.count(step=2), itertools.count(start=1, step=2)):
+                        %found = False
+                        <tr>
+                            %for x in range(-3, 4):
+                                %if str(x) not in floor:
+                                    <td></td>
+                                    <td></td>
+                                    %continue
+                                %end
+                                %corridor = floor[str(x)]
+                                %if len(corridor) > z_right:
+                                    <td>{{!image(corridor[z_right])}}</td>
+                                %else:
+                                    <td></td>
+                                %end
+                                %if len(corridor) > z_left:
+                                    <td>{{!image(corridor[z_left])}}</td>
+                                    %found = True
+                                %else:
+                                    <td></td>
+                                %end
+                            %end
+                        </tr>
+                        %if not found:
+                            %break
+                        %end
+                    %end
+                </tbody>
+            </table>
+        """, Cloud=wurstminebot.commands.Cloud, image=(lambda cloud_chest: item_image(item_in_cloud_chest(cloud_chest), link=cloud_chest['damage'], tooltip=True)), floor=floor, y=y)
+    yield footer()
 
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():
