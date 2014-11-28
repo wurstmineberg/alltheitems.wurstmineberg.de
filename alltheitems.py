@@ -11,16 +11,15 @@ sys.path.append('/opt/py')
 import api
 import bottle
 
-application = bottle.Bottle()
 assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master'
 document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master'
 
-def header():
+def header(*, title='Wurstmineberg: All The Items'):
     return """<!DOCTYPE html>
     <html>
         <head>
             <meta charset="utf-8" />
-            <title>Wurstmineberg: All The Items</title>
+            <title>{title}</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <meta name="description" content="Searchable Minecraft blocks and items database" />
             <meta name="author" content="Wurstmineberg" />
@@ -49,7 +48,7 @@ def header():
                 -->
             </nav>
             <div class="container" style="text-align: center;">
-    """
+    """.format(title=title)
 
 def footer():
     return """
@@ -73,15 +72,45 @@ def footer():
     </html>
     """
 
-@application.route('/alltheitems.png')
+ERROR_PAGE_TEMPLATE = """
+%%try:
+    %%from bottle import HTTP_CODES, request
+""" + header(title='Error: {{e.status}}') + """
+                <h2>Error {{e.status}}: {{HTTP_CODES.get(e.status, '(unknown error)')}}</h2>
+                <p><img src="/assets/alltheitems2.png" alt="Craft ALL the items?" title="original image by Allie Brosh of Hyperbole and a Half" /></p>
+                <p>Sorry, the requested URL <tt>{{repr(request.url)}}</tt>
+                   caused an error:</p>
+                <pre>{{e.body}}</pre>
+                %%if e.exception:
+                  <h2>Exception:</h2>
+                  <pre>{{repr(e.exception)}}</pre>
+                %%end
+                %%if e.traceback:
+                  <h2>Traceback:</h2>
+                  <pre>{{e.traceback}}</pre>
+                %%end
+""" + footer() + """
+%%except ImportError:
+    <b>ImportError:</b> Could not generate the error page. Please add bottle to
+    the import path.
+%%end
+"""
+
+class Bottle(bottle.Bottle):
+    def default_error_handler(self, res):
+        return bottle.tob(bottle.template(ERROR_PAGE_TEMPLATE, e=res))
+
+application = Bottle()
+
+@application.route('/assets/alltheitems.png')
 def image_alltheitems():
     """The “Craft ALL the items!” image."""
-    return bottle.static_file('alltheitems.png', root=document_root)
+    return bottle.static_file('static/img/alltheitems.png', root=document_root)
 
-@application.route('/alltheitems2.png')
+@application.route('/assets/alltheitems2.png')
 def image_alltheitems2():
     """The “Craft ALL the items?” image."""
-    return bottle.static_file('alltheitems2.png', root=document_root)
+    return bottle.static_file('static/img/alltheitems2.png', root=document_root)
 
 @application.route('/favicon.ico')
 def show_favicon():
@@ -91,7 +120,7 @@ def show_favicon():
 @application.route('/')
 def show_index():
     """The index page."""
-    return bottle.static_file('index.html', root=document_root)
+    return bottle.static_file('static/index.html', root=document_root)
 
 @application.route('/item/<plugin>/<item_id>/<damage>')
 def show_item_by_damage(plugin, item_id, damage):
@@ -103,14 +132,6 @@ def show_item_by_damage(plugin, item_id, damage):
 @application.route('/item/<plugin>/<item_id>')
 def show_item_by_id(plugin, item_id):
     return show_item_by_damage(plugin, item_id, None)
-
-@application.error(404)
-def error_404(error):
-    return bottle.static_file('404.html', root=document_root)
-
-@application.error(500)
-def error_500(error):
-    return bottle.static_file('500.html', root=document_root)
 
 if __name__ == '__main__':
     bottle.run(app=application, host='0.0.0.0', port=8081)
