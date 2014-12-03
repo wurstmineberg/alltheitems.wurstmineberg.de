@@ -55,7 +55,7 @@ def header(*, title='Wurstmineberg: All The Items'):
             <div class="container" style="text-align: center;">
     """.format(title=title)
 
-def footer(*, linkify_headers=False):
+def footer(*, linkify_headers=False, additional_js=''):
     return """
             </div>
             <hr />
@@ -72,14 +72,19 @@ def footer(*, linkify_headers=False):
                 set_anchor_height();
                 $(".use-tooltip").tooltip();
                 $("abbr").tooltip();
+    """ + additional_js + """
             </script>
         </body>
     </html>
     """
 
-def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', link=False, tooltip=False):
+def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
     if classes is None:
         classes = []
+    if block and 'blockInfo' in item_info:
+        item_info = item_info.copy()
+        item_info.update(item_info['blockInfo'])
+        del item_info['blockInfo']
     if 'image' in item_info:
         if item_info['image'].startswith('http://') or item_info['image'].startswith('https://'):
             ret = '<img src="{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
@@ -98,9 +103,9 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', link
         plugin = string_id[0]
         string_id = ':'.join(string_id[1:])
         if link is None:
-            return '<a href="/item/{}/{}">{}</a>'.format(plugin, string_id, ret)
+            return '<a href="/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, ret)
         else:
-            return '<a href="/item/{}/{}/{}">{}</a>'.format(plugin, string_id, link, ret)
+            return '<a href="/{}/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link, ret)
     else:
         return '<a href="{}">{}</a>'.format(link, ret)
 
@@ -229,9 +234,93 @@ def show_index():
     """The index page."""
     return bottle.static_file('static/index.html', root=document_root)
 
+@application.route('/block/<plugin>/<block_id>/<damage:int>')
+def show_block_by_damage(plugin, block_id, damage):
+    block = api.api_item_by_damage(plugin + ':' + block_id, damage)
+    if 'blockID' not in block:
+        bottle.abort(404, 'There is no block with the ID {}:{}. There is however an item with that ID.'.format(plugin, block_id))
+    if 'blockInfo' in block:
+        block.update(block['blockInfo'])
+        del block['blockInfo']
+    yield header()
+    yield bottle.template("""
+        <h1 style="font-size: 44px;">{{!item_image(block, style='vertical-align: baseline;', block=True)}}&thinsp;{{block['name']}}</h1>
+        <p class="muted">
+            {{block['stringID'].split(':')[0]}}:{{!'' if damage is None else '<a href="/block/{}/{}">'.format(plugin, block_id)}}{{':'.join(block['stringID'].split(':')[1:])}}{{!'' if damage is None else '</a>/{}'.format(damage)}}
+        </p>
+        %if damage is None:
+            <%
+                damage_values = sorted(int(damage) for damage in block.get('damageValues', {}))
+                if 0 not in damage_values:
+                    damage_values[:0] = [0]
+                end
+            %>
+            <p>
+                Damage values: {{!' '.join(item_image(api.api_item_by_damage(plugin + ':' + block_id, damage), link=damage, block=True, tooltip=True) for damage in damage_values)}}
+            </p>
+        %end
+    """, api=api, item_image=item_image, plugin=plugin, block_id=block_id, block=block, damage=damage)
+    yield """
+        <ul id="pagination" class="nav nav-tabs">
+            <li><a id="tab-obtaining" class="tab-item" href="#obtaining">Obtaining</a></li>
+            <li><a id="tab-usage" class="tab-item" href="#usage">Usage</a></li>
+        </ul>
+    """
+    yield """<style type="text/css">
+        .section p:first-child {
+            margin-top: 20px;
+        }
+    </style>"""
+    yield bottle.template("""
+        %import json
+        <div id="obtaining" class="section">
+            %i = 0
+            %if 'itemID' in block:
+                %item = api.api_item_by_damage(plugin + ':' + block_id, damage)
+                <p>{{block['name']}} can be obtained by placing <a href="{{'/item/{}/{}'.format(plugin, block_id) if damage is None else '/block/{}/{}/{}'.format(plugin, block_id, damage)}}">{{item['name'] if item['name'] != block['name'] else 'its item form'}}</a>.</p>
+                %i += 1
+            %end
+            %if len(block.get('obtaining', [])) > 0:
+                %for method in block['obtaining']:
+                    <%
+                        if method['type'] in ('bonusChest', 'chest', 'craftingShaped', 'craftingShapeless', 'entityDeath', 'mining', 'smelting', 'trading'):
+                            continue # this is a method of obtaining the item, not the block
+                        end
+                    %>
+                    %if i > 0:
+                        <hr />
+                    %end
+                    <p>{{block['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. It looks like this:</p>
+                    <pre style="text-align: left;">{{json.dumps(method, indent=4)}}</pre>
+                    %i += 1
+                %end
+            %end
+            %if i == 0:
+                %if damage is None:
+                    <p>{{block['name']}} is unobtainable in Survival or has no method of obtaining common to all damage values. Click on one of the icons above to view them.</p>
+                %else:
+                    <p>{{block['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#setblock">setblock</a> &lt;x&gt; &lt;y&gt; &lt;x&gt; {{block['stringID']}}{{'' if damage == 0 else ' {}'.format(damage)}}</code>.</p>
+                %end
+            %end
+        </div>
+        <div id="usage" class="section hidden">
+            <h2>Coming <a href="http://wiki.wurstmineberg.de/Soon™">soon™</a></h2>
+        </div>
+    """, api=api, plugin=plugin, block_id=block_id, block=block, damage=damage)
+    yield footer(additional_js="""
+        selectTabWithID("tab-obtaining");
+        bindTabEvents();
+    """)
+
+@application.route('/block/<plugin>/<block_id>')
+def show_block_by_id(plugin, block_id):
+    return show_block_by_damage(plugin, block_id, None)
+
 @application.route('/item/<plugin>/<item_id>/<damage:int>')
 def show_item_by_damage(plugin, item_id, damage):
     item = api.api_item_by_damage(plugin + ':' + item_id, damage)
+    if 'itemID' not in item:
+        bottle.abort(404, 'There is no item with the ID {}:{}. There is however a block with that ID.'.format(plugin, item_id))
     yield header()
     yield bottle.template("""
         <h1 style="font-size: 44px;">{{!item_image(item, style='vertical-align: baseline;')}}&thinsp;{{item['name']}}</h1>
@@ -250,7 +339,59 @@ def show_item_by_damage(plugin, item_id, damage):
             </p>
         %end
     """, api=api, item_image=item_image, plugin=plugin, item_id=item_id, item=item, damage=damage)
-    yield footer()
+    yield """
+        <ul id="pagination" class="nav nav-tabs">
+            <li><a id="tab-obtaining" class="tab-item" href="#obtaining">Obtaining</a></li>
+            <li><a id="tab-usage" class="tab-item" href="#usage">Usage</a></li>
+        </ul>
+    """
+    yield """<style type="text/css">
+        .section p:first-child {
+            margin-top: 20px;
+        }
+    </style>"""
+    yield bottle.template("""
+        %import json
+        <div id="obtaining" class="section">
+            %i = 0
+            %if 'blockID' in item and item.get('dropsSelf', True):
+                <p>{{item['name']}} can be obtained by mining <a href="{{'/block/{}/{}'.format(plugin, item_id) if damage is None else '/block/{}/{}/{}'.format(plugin, item_id, damage)}}">{{item['blockInfo']['name'] if 'blockInfo' in item and 'name' in item['blockInfo'] and item['blockInfo']['name'] != item['name'] else 'its block form'}}</a>{{'.' if item.get('dropsSelf', True) is True else ' with the following properties:'}}</p>
+                %if item.get('dropsSelf', True) is not True:
+                    <pre style="text-align: left;">{{json.dumps(item['dropsSelf'], indent=4)}}</pre>
+                %end
+                %i += 1
+            %end
+            %if len(item.get('obtaining', [])) > 0:
+                %for method in item['obtaining']:
+                    <%
+                        if method['type'] in ('structure',):
+                            continue # this is a method of obtaining the block, not the item
+                        end
+                    %>
+                    %if i > 0:
+                        <hr />
+                    %end
+                    <p>{{item['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. It looks like this:</p>
+                    <pre style="text-align: left;">{{json.dumps(method, indent=4)}}</pre>
+                    %i += 1
+                %end
+            %end
+            %if i == 0:
+                %if damage is None:
+                    <p>{{item['name']}} is unobtainable in Survival or has no method of obtaining common to all damage values. Click on one of the icons above to view them.</p>
+                %else:
+                    <p>{{item['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item['stringID']}} {{'[amount]' if damage == 0 else '<amount> {}'.format(damage)}}</code>.</p>
+                %end
+            %end
+        </div>
+        <div id="usage" class="section hidden">
+            <h2>Coming <a href="http://wiki.wurstmineberg.de/Soon™">soon™</a></h2>
+        </div>
+    """, plugin=plugin, item_id=item_id, item=item, damage=damage)
+    yield footer(additional_js="""
+        selectTabWithID("tab-obtaining");
+        bindTabEvents();
+    """)
 
 @application.route('/item/<plugin>/<item_id>')
 def show_item_by_id(plugin, item_id):
