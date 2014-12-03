@@ -277,7 +277,7 @@ def show_block_by_damage(plugin, block_id, damage):
             %i = 0
             %if 'itemID' in block:
                 %item = api.api_item_by_damage(plugin + ':' + block_id, damage)
-                <p>{{block['name']}} can be obtained by placing <a href="{{'/item/{}/{}'.format(plugin, block_id) if damage is None else '/block/{}/{}/{}'.format(plugin, block_id, damage)}}">{{item['name'] if item['name'] != block['name'] else 'its item form'}}</a>.</p>
+                <p>{{block['name']}} can be obtained by placing <a href="{{'/item/{}/{}'.format(plugin, block_id) if damage is None else '/item/{}/{}/{}'.format(plugin, block_id, damage)}}">{{item['name'] if item['name'] != block['name'] else 'its item form'}}</a>.</p>
                 %i += 1
             %end
             %if len(block.get('obtaining', [])) > 0:
