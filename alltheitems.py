@@ -142,10 +142,39 @@ class Bottle(bottle.Bottle):
 application = Bottle()
 
 @application.route('/cloud')
-def cloud_index():
+def cloud_index(show_progress=False):
     """A page listing all Cloud corridors."""
+    def image_from_cloud_chest(cloud_chest):
+        if not cloud_chest.get('exists', True):
+            background_color = '#777'
+        elif show_progress:
+            if cloud_chest['hasSorter']:
+                if cloud_chest['hasOverflow'] and cloud_chest['hasSmartChest']:
+                    background_color = 'transparent'
+                else:
+                    background_color = '#f00'
+            else:
+                if cloud_chest['hasSmartChest']:
+                    stackable = item_in_cloud_chest(cloud_chest).get('stackable', True)
+                    if stackable is True or stackable > 1:
+                        background_color = '#ff0'
+                    else:
+                        background_color = '#0ff'
+                else:
+                    background_color = '#f70'
+        else:
+            background_color = 'transparent'
+        return '<td style="background-color: {};">{}</td>'.format(background_color, item_image(item_in_cloud_chest(cloud_chest), link=cloud_chest['damage'], tooltip=True))
+    
     yield header()
-    yield '<p>The <a href="http://wiki.wurstmineberg.de/Cloud">Cloud</a> is the public item storage on <a href="http://wurstmineberg.de/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.wurstmineberg.de/SmartChest">SmartChests</a> in them:</p>'
+    if show_progress:
+        yield '<p>The build progress of the <a href="/cloud">Cloud</a>. White: all good (has SmartChest, sorter, and overflow). Cyan: has SmartChest, needs no sorter or overflow because unstackable. Yellow: has SmartChest but needs sorter. Orange: needs SmartChest. Red: has SmartChest but needs overflow (can break other SmartChests).</p>'
+    else:
+        yield '<p>The <a href="http://wiki.wurstmineberg.de/Cloud">Cloud</a> is the public item storage on <a href="http://wurstmineberg.de/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.wurstmineberg.de/SmartChest">SmartChests</a> in them:</p>'
+    with open(os.path.join(assets_root, 'json/cloud.json')) as cloud_json:
+        cloud = json.load(cloud_json)
+    if any(not chest.get('exists', True) for _, _, _, _, _, chest in wurstminebot.commands.Cloud.cloud_iter(cloud)):
+        yield "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>"
     yield """<style type="text/css">
         .item-table td {
             box-sizing: content-box;
@@ -157,8 +186,6 @@ def cloud_index():
             border-left: 1px solid gray;
         }
     </style>"""
-    with open(os.path.join(assets_root, 'json/cloud.json')) as cloud_json:
-        cloud = json.load(cloud_json)
     floors = {}
     for x, corridor, y, floor, z, chest in wurstminebot.commands.Cloud.cloud_iter(cloud):
         if y not in floors:
@@ -193,12 +220,12 @@ def cloud_index():
                                 %end
                                 %corridor = floor[str(x)]
                                 %if len(corridor) > z_right:
-                                    <td>{{!image(corridor[z_right])}}</td>
+                                    {{!image(corridor[z_right])}}
                                 %else:
                                     <td></td>
                                 %end
                                 %if len(corridor) > z_left:
-                                    <td>{{!image(corridor[z_left])}}</td>
+                                    {{!image(corridor[z_left])}}
                                     %found = True
                                 %else:
                                     <td></td>
@@ -211,8 +238,12 @@ def cloud_index():
                     %end
                 </tbody>
             </table>
-        """, Cloud=wurstminebot.commands.Cloud, image=(lambda cloud_chest: item_image(item_in_cloud_chest(cloud_chest), link=cloud_chest['damage'], tooltip=True)), floor=floor, y=y)
+        """, Cloud=wurstminebot.commands.Cloud, image=image_from_cloud_chest, floor=floor, y=y)
     yield footer(linkify_headers=True)
+
+@application.route('/cloud/progress')
+def cloud_index_progress():
+    return cloud_index(show_progress=True)
 
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():
