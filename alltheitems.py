@@ -170,7 +170,7 @@ def cloud_index(show_progress=False):
     if show_progress:
         yield '<p>The build progress of the <a href="/cloud">Cloud</a>. White: all good (has SmartChest, sorter, and overflow). Cyan: has SmartChest, needs no sorter or overflow because unstackable. Yellow: has SmartChest but needs sorter. Orange: needs SmartChest. Red: has SmartChest but needs overflow (can break other SmartChests).</p>'
     else:
-        yield '<p>The <a href="http://wiki.wurstmineberg.de/Cloud">Cloud</a> is the public item storage on <a href="http://wurstmineberg.de/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.wurstmineberg.de/SmartChest">SmartChests</a> in them:</p>'
+        yield '<p>The <a href="http://wiki.wurstmineberg.de/Cloud">Cloud</a> is the public item storage on <a href="http://wurstmineberg.de/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.wurstmineberg.de/SmartChest">SmartChests</a> in them.</p>'
     with open(os.path.join(assets_root, 'json/cloud.json')) as cloud_json:
         cloud = json.load(cloud_json)
     if any(not chest.get('exists', True) for _, _, _, _, _, chest in wurstminebot.commands.Cloud.cloud_iter(cloud)):
