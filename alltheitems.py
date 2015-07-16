@@ -169,7 +169,7 @@ def cloud_index():
         cloud = json.load(cloud_json)
     explained_colors = set()
     for _, _, _, _, _, chest in wurstminebot.commands.Cloud.cloud_iter(cloud):
-        if not hest.get('exists', True):
+        if not chest.get('exists', True):
             if 'gray' not in explained_colors:
                 yield "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>"
                 explained_colors.add('gray')
