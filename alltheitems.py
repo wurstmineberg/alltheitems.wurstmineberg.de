@@ -142,46 +142,67 @@ class Bottle(bottle.Bottle):
 application = Bottle()
 
 @application.route('/cloud')
-def cloud_index(show_progress=False):
+@application.route('/cloud/progress')
+def cloud_index():
     """A page listing all Cloud corridors."""
     def image_from_cloud_chest(cloud_chest):
         if not cloud_chest.get('exists', True):
             background_color = '#777'
-        elif show_progress:
-            if cloud_chest['hasSorter']:
-                if cloud_chest['hasOverflow'] and cloud_chest['hasSmartChest']:
-                    background_color = 'transparent'
-                else:
-                    background_color = '#f00'
+        elif cloud_chest['hasSorter']:
+            if cloud_chest['hasOverflow'] and cloud_chest['hasSmartChest']:
+                background_color = 'transparent'
             else:
-                if cloud_chest['hasSmartChest']:
-                    stackable = item_in_cloud_chest(cloud_chest).get('stackable', True)
-                    if stackable is True or stackable > 1:
-                        background_color = '#ff0'
-                    else:
-                        background_color = '#0ff'
-                else:
-                    background_color = '#f70'
+                background_color = '#f00'
+        elif cloud_chest['hasSmartChest']:
+            stackable = item_in_cloud_chest(cloud_chest).get('stackable', True)
+            if stackable is True or stackable > 1:
+                background_color = '#ff0'
+            else:
+                background_color = '#0ff'
         else:
-            background_color = 'transparent'
+            background_color = '#f70'
         return '<td style="background-color: {};">{}</td>'.format(background_color, item_image(item_in_cloud_chest(cloud_chest), link=cloud_chest['damage'], tooltip=True))
-    
+
     yield header()
-    if show_progress:
-        yield '<p>The build progress of the <a href="/cloud">Cloud</a>. White: all good (has SmartChest, sorter, and overflow). Cyan: has SmartChest, needs no sorter or overflow because unstackable. Yellow: has SmartChest but needs sorter. Orange: needs SmartChest. Red: has SmartChest but needs overflow (can break other SmartChests).</p>'
-    else:
-        yield '<p>The <a href="http://wiki.wurstmineberg.de/Cloud">Cloud</a> is the public item storage on <a href="http://wurstmineberg.de/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.wurstmineberg.de/SmartChest">SmartChests</a> in them.</p>'
+    yield '<p>The <a href="http://wiki.wurstmineberg.de/Cloud">Cloud</a> is the public item storage on <a href="http://wurstmineberg.de/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.wurstmineberg.de/SmartChest">SmartChests</a> in them.</p>'
     with open(os.path.join(assets_root, 'json/cloud.json')) as cloud_json:
         cloud = json.load(cloud_json)
-    if any(not chest.get('exists', True) for _, _, _, _, _, chest in wurstminebot.commands.Cloud.cloud_iter(cloud)):
-        yield "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>"
+    explained_colors = set()
+    for _, _, _, _, _, chest in wurstminebot.commands.Cloud.cloud_iter(cloud):
+        if not hest.get('exists', True):
+            if 'gray' not in explained_colors:
+                yield "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>"
+                explained_colors.add('gray')
+        elif chest['hasSorter']:
+            if chest['hasOverflow'] and chest['hasSmartChest']:
+                explained_colors.add('white')
+            else:
+                if 'red' not in explained_colors:
+                    yield '<p>A red background means that the chest has a sorter but the SmartChest and/or the overflow is missing. This can break other SmartChests, so it should be fixed as soon as possible!</p>'
+                    explained_colors.add('red')
+        elif chest['hasSmartChest']:
+            stackable = item_in_cloud_chest(chest).get('stackable', True)
+            if stackable is True or stackable > 1:
+                if 'yellow' not in explained_colors:
+                    yield "<p>A yellow background means that the chest doesn't have a sorter yet.</p>"
+                    explained_colors.add('yellow')
+            else:
+                if 'cyan' not in explained_colors:
+                    yield '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>'
+                    explained_colors.add('cyan')
+        else:
+            if 'orange' not in explained_colors:
+                yield "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>"
+                explained_colors.add('orange')
+    if 'white' in explained_colors and len(explained_colors) > 1:
+        yield '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>'
     yield """<style type="text/css">
         .item-table td {
             box-sizing: content-box;
             height: 32px;
             width: 32px;
         }
-        
+
         .item-table .left-sep {
             border-left: 1px solid gray;
         }
@@ -240,10 +261,6 @@ def cloud_index(show_progress=False):
             </table>
         """, Cloud=wurstminebot.commands.Cloud, image=image_from_cloud_chest, floor=floor, y=y)
     yield footer(linkify_headers=True)
-
-@application.route('/cloud/progress')
-def cloud_index_progress():
-    return cloud_index(show_progress=True)
 
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():
