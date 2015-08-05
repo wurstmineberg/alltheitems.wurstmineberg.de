@@ -26,7 +26,7 @@ if is_dev:
     assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/branch/dev'
     document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev'
     host = 'dev.wurstmineberg.de'
-    api.CONFIG_PATH = '/opt/wurstmineberg/config/api.json'
+    api.CONFIG_PATH = '/opt/wurstmineberg/config/devapi.json'
 else:
     assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master'
     document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master'
