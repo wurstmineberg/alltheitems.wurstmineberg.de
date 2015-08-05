@@ -18,7 +18,7 @@ bottle.debug()
 
 try:
     import uwsgi
-    is_dev = uwsgi.opt['is_dev'] == 'true'
+    is_dev = uwsgi.opt['is_dev'] == 'true' or uwsgi.opt['is_dev'] == b'true'
 except:
     is_dev = False
 
