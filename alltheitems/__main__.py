@@ -8,18 +8,30 @@ import sys
 
 sys.path.append('/opt/py')
 
-import api
+import api #TODO import dev api if is_dev
 import bottle
 import json
 import os.path
-import wurstminebot.commands
+import wurstminebot.commands #TODO remove wurstminebot dependency
 
 bottle.debug()
 
-assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master'
-document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master'
+try:
+    import uwsgi
+    is_dev = uwsgi.opt['is_dev'] == 'true'
+except:
+    is_dev = False
 
-def header(*, title='Wurstmineberg: All The Items'):
+if is_dev:
+    assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/branch/dev'
+    document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev'
+    host = 'dev.wurstmineberg.de'
+else:
+    assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master'
+    document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master'
+    host = 'wurstmineberg.de'
+
+def header(*, title='Wurstmineberg: All The Items [DEV]' if is_dev else 'Wurstmineberg: All The Items'):
     return """<!DOCTYPE html>
     <html>
         <head>
@@ -30,8 +42,8 @@ def header(*, title='Wurstmineberg: All The Items'):
             <meta name="author" content="Wurstmineberg" />
             <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" />
             <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" />
-            <link rel="stylesheet" href="http://assets.wurstmineberg.de/css/common.css" />
-            <link rel="stylesheet" href="http://assets.wurstmineberg.de/css/responsive.css" />
+            <link rel="stylesheet" href="http://assets.{host}/css/common.css" />
+            <link rel="stylesheet" href="http://assets.{host}/css/responsive.css" />
         </head>
         <body>
             <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -53,21 +65,21 @@ def header(*, title='Wurstmineberg: All The Items'):
                 -->
             </nav>
             <div class="container" style="text-align: center;">
-    """.format(title=title)
+    """.format(title=title, host=host)
 
 def footer(*, linkify_headers=False, additional_js=''):
     return """
             </div>
             <hr />
-            <p class="muted text-center">The People of wurstmineberg.de 2012–2014</p>
+            <p class="muted text-center">The People of wurstmineberg.de 2012–2015</p>
             <script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
             <script src="http://assets.wurstmineberg.de/js/underscore-min.js"></script>
             <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
             <script src="//jquerymy.com/js/md5.js"></script>
-            <script src="http://assets.wurstmineberg.de/js/common.js"></script>
+            <script src="http://assets.{host}/js/common.js"></script>
             <script type="text/javascript">
                 // run by default
-    """ + ('linkify_headers();' if linkify_headers else '') + """
+    """.format(host=host) + ('linkify_headers();' if linkify_headers else '') + """
                 //configure_navigation();
                 set_anchor_height();
                 $(".use-tooltip").tooltip();
@@ -89,11 +101,11 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
         if item_info['image'].startswith('http://') or item_info['image'].startswith('https://'):
             ret = '<img src="{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
         elif tint is None:
-            ret = '<img src="http://assets.wurstmineberg.de/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style)
+            ret = '<img src="http://assets.{host}/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style, host=host)
         else:
-            ret = '<img style="background: url(http://api.wurstmineberg.de/minecraft/items/render/dyed-by-id/{}/{:06x}/png.png)" src="http://assets.wurstmineberg.de/img/grid-overlay/{}" class="{}" style="{}" />'.format(item_info['stringID'], tint, item_info['image'], ' '.join(classes), style)
+            ret = '<img style="background: url(http://api.{host}/minecraft/items/render/dyed-by-id/{}/{:06x}/png.png)" src="http://assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(item_info['stringID'], tint, item_info['image'], ' '.join(classes), style, host=host)
     else:
-        ret = '<img src="http://assets.wurstmineberg.de/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style)
+        ret = '<img src="http://assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=host)
     if tooltip:
         ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
     if link is False:
@@ -130,8 +142,7 @@ ERROR_PAGE_TEMPLATE = """
                 %end
 """ + footer() + """
 %except ImportError:
-    <b>ImportError:</b> Could not generate the error page. Please add bottle to
-    the import path.
+    <b>ImportError:</b> Could not generate the error page. Please add bottle to the import path.
 %end
 """
 
@@ -164,7 +175,7 @@ def cloud_index():
         return '<td style="background-color: {};">{}</td>'.format(background_color, item_image(item_in_cloud_chest(cloud_chest), link=cloud_chest['damage'], tooltip=True))
 
     yield header()
-    yield '<p>The <a href="http://wiki.wurstmineberg.de/Cloud">Cloud</a> is the public item storage on <a href="http://wurstmineberg.de/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.wurstmineberg.de/SmartChest">SmartChests</a> in them.</p>'
+    yield '<p>The <a href="http://wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="http://{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=host)
     with open(os.path.join(assets_root, 'json/cloud.json')) as cloud_json:
         cloud = json.load(cloud_json)
     explained_colors = set()
@@ -352,9 +363,9 @@ def show_block_by_damage(plugin, block_id, damage):
             %end
         </div>
         <div id="usage" class="section hidden">
-            <h2>Coming <a href="http://wiki.wurstmineberg.de/Soon™">soon™</a></h2>
+            <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
         </div>
-    """, api=api, plugin=plugin, block_id=block_id, block=block, damage=damage)
+    """, host=host, api=api, plugin=plugin, block_id=block_id, block=block, damage=damage)
     yield footer(additional_js="""
         selectTabWithID("tab-obtaining");
         bindTabEvents();
@@ -433,9 +444,9 @@ def show_item_by_damage(plugin, item_id, damage):
             %end
         </div>
         <div id="usage" class="section hidden">
-            <h2>Coming <a href="http://wiki.wurstmineberg.de/Soon™">soon™</a></h2>
+            <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
         </div>
-    """, plugin=plugin, item_id=item_id, item=item, damage=damage)
+    """, host=host, plugin=plugin, item_id=item_id, item=item, damage=damage)
     yield footer(additional_js="""
         selectTabWithID("tab-obtaining");
         bindTabEvents();
