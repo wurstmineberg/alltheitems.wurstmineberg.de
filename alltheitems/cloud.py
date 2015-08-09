@@ -32,10 +32,7 @@ def image_from_chest(cloud_chest):
         background_color = 'transparent'
     return '<td style="background-color: {};">{}</td>'.format(background_color, ati.item_stub_image(cloud_chest))
 
-@ati.application.route('/cloud')
 def index():
-    """A page listing all Cloud corridors."""
-
     yield ati.header(title='Cloud')
     def body():
         yield '<p>The <a href="http://wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="http://{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=host)

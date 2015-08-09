@@ -234,6 +234,11 @@ def show_index():
     """The index page."""
     return bottle.static_file('static/index.html', root=str(document_root))
 
+@application.route('/cloud')
+def cloud_index():
+    """A page listing all Cloud corridors."""
+    return alltheitems.cloud.index()
+
 @application.route('/block/<plugin>/<block_id>/<damage:int>')
 def show_block_by_damage(plugin, block_id, damage):
     block = api.api_item_by_damage(plugin + ':' + block_id, damage)
