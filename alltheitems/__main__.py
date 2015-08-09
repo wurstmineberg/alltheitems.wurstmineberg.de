@@ -8,7 +8,6 @@ import sys
 
 sys.path.append('/opt/py')
 
-import alltheitems.cloud
 import api
 import bottle
 import contextlib
@@ -97,7 +96,7 @@ def footer(*, linkify_headers=False, additional_js=''):
     </html>
     """
 
-def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', link=False, tooltip=False):
+def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
     if classes is None:
         classes = []
     if block and 'blockInfo' in item_info:
@@ -156,7 +155,7 @@ def item_stub_image(item_stub, *, block=False, link=True, tooltip=True):
             link = item_stub['effect']
         else:
             link = None # base item
-    return item_image(item_info_from_stub(item_stub), block=block, , link=link, tooltip=tooltip)
+    return item_image(item_info_from_stub(item_stub), block=block, link=link, tooltip=tooltip)
 
 def ordinal(number):
     decimal = str(number)
@@ -213,7 +212,7 @@ class Bottle(bottle.Bottle):
 
 application = Bottle()
 
-application.route('/cloud')(alltheitems.cloud.index)
+import alltheitems.cloud
 
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():

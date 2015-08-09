@@ -32,6 +32,7 @@ def image_from_chest(cloud_chest):
         background_color = 'transparent'
     return '<td style="background-color: {};">{}</td>'.format(background_color, ati.item_stub_image(cloud_chest))
 
+@ati.application.route('/cloud')
 def index():
     """A page listing all Cloud corridors."""
 
