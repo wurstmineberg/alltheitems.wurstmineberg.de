@@ -172,34 +172,31 @@ def html_exceptions(content_iter):
         yield from content_iter
     except Exception as e:
         yield bottle.template("""
+            %import io, traceback
             <p>Sorry, the requested page caused an error:</p>
-            <pre>{{e.body}}</pre>
-            %if e.exception:
-              <h2>Exception:</h2>
-              <pre>{{repr(e.exception)}}</pre>
-            %end
-            %if e.traceback:
-              <h2>Traceback:</h2>
-              <pre>{{e.traceback}}</pre>
-            %end
+            <pre>{{e.__class__.__name__}}: {{e}}</pre>
+            <h2>Traceback:</h2>
+            %buf = io.StringIO()
+            %traceback.print_exc(file=buf)
+            <pre>{{buf.getvalue()}}</pre>
         """, e=e)
 
 ERROR_PAGE_TEMPLATE = """
 %try:
     %from bottle import HTTP_CODES, request
 """ + header(title='Error {{e.status_code}}') + """
-                <h2>Error {{e.status_code}}: {{HTTP_CODES.get(e.status_code, '(unknown error)')}}</h2>
-                <p><img src="/assets/alltheitems2.png" alt="Craft ALL the items?" title="original image by Allie Brosh of Hyperbole and a Half" /></p>
-                <p>Sorry, the requested URL <tt>{{repr(request.url)}}</tt> caused an error:</p>
-                <pre>{{e.body}}</pre>
-                %if e.exception:
-                  <h2>Exception:</h2>
-                  <pre>{{repr(e.exception)}}</pre>
-                %end
-                %if e.traceback:
-                  <h2>Traceback:</h2>
-                  <pre>{{e.traceback}}</pre>
-                %end
+    <h2>Error {{e.status_code}}: {{HTTP_CODES.get(e.status_code, '(unknown error)')}}</h2>
+    <p><img src="/assets/alltheitems2.png" alt="Craft ALL the items?" title="original image by Allie Brosh of Hyperbole and a Half" /></p>
+    <p>Sorry, the requested URL <tt>{{repr(request.url)}}</tt> caused an error:</p>
+    <pre>{{e.body}}</pre>
+    %if e.exception:
+        <h2>Exception:</h2>
+        <pre>{{repr(e.exception)}}</pre>
+    %end
+    %if e.traceback:
+        <h2>Traceback:</h2>
+        <pre>{{e.traceback}}</pre>
+    %end
 """ + footer() + """
 %except ImportError:
     <b>ImportError:</b> Could not generate the error page. Please add bottle to the import path.
