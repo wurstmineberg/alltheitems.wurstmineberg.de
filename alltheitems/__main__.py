@@ -8,11 +8,13 @@ import sys
 
 sys.path.append('/opt/py')
 
+import alltheitems.cloud
 import api
 import bottle
+import contextlib
 import json
-import os.path
-import wurstminebot.commands #TODO remove wurstminebot dependency
+import pathlib
+import re
 
 bottle.debug()
 
@@ -23,16 +25,18 @@ except:
     is_dev = False
 
 if is_dev:
-    assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/branch/dev'
-    document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev'
+    assets_root = pathlib.Path('/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/branch/dev')
+    document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev')
     host = 'dev.wurstmineberg.de'
     api.CONFIG_PATH = '/opt/wurstmineberg/config/devapi.json'
 else:
-    assets_root = '/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master'
-    document_root = '/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master'
+    assets_root = pathlib.Path('/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master')
+    document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master')
     host = 'wurstmineberg.de'
 
-def header(*, title='Wurstmineberg: All The Items [DEV]' if is_dev else 'Wurstmineberg: All The Items'):
+def header(*, title='All The Items'):
+    if is_dev:
+        title = '[DEV] ' + title
     return """<!DOCTYPE html>
     <html>
         <head>
@@ -55,7 +59,9 @@ def header(*, title='Wurstmineberg: All The Items [DEV]' if is_dev else 'Wurstmi
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="/">All The Items</a>
+                    <a class="navbar-brand" href="/">All The Items</a>""".format(title=title, host=host) + ("""
+                    <span style="color: red; left: 100; position: absolute; top: 30; transform: rotate(-10deg) scale(2); z-index: 10;">[DEV]</span>
+                    """ if is_dev else '') + """
                 </div>
                 <!-- insert search bar here
                     <div class="collapse navbar-collapse navbar-ex1-collapse">
@@ -91,7 +97,7 @@ def footer(*, linkify_headers=False, additional_js=''):
     </html>
     """
 
-def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
+def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', link=False, tooltip=False):
     if classes is None:
         classes = []
     if block and 'blockInfo' in item_info:
@@ -116,14 +122,68 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
         plugin = string_id[0]
         string_id = ':'.join(string_id[1:])
         if link is None:
+            # base item
             return '<a href="/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, ret)
         else:
+            # damage value
             return '<a href="/{}/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link, ret)
+    elif isinstance(link, str) and re.match('[0-9a-z_]+:[0-9a-z_]+', link):
+        # effect
+        string_id = item_info['stringID'].split(':')
+        plugin = string_id[0]
+        string_id = ':'.join(string_id[1:])
+        effect_id = link.split(':')
+        effect_plugin = effect_id[0]
+        effect_id = ':'.join(effect_id[1:])
+        return '<a href="/{}/{}/{}/effect/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, effect_plugin, effect_id, ret)
     else:
         return '<a href="{}">{}</a>'.format(link, ret)
 
-def item_in_cloud_chest(cloud_chest):
-    return api.api_item_by_damage(cloud_chest['id'], cloud_chest['damage'])
+def item_info_from_stub(item_stub):
+    if 'damage' in item_stub:
+        return api.api_item_by_damage(item_stub['id'], item_stub['damage'])
+    elif 'effect' in item_stub:
+        return api.api_item_by_effect(item_stub['id'], item_stub['effect'])
+    else:
+        return api.api_item_by_id(item_stub['id'])
+
+def item_stub_image(item_stub, *, block=False, link=True, tooltip=True):
+    if link is True:
+        # derive link from item stub
+        if 'damage' in item_stub:
+            link = item_stub['damage']
+        elif 'effect' in item_stub:
+            link = item_stub['effect']
+        else:
+            link = None # base item
+    return item_image(item_info_from_stub(item_stub), block=block, , link=link, tooltip=tooltip)
+
+def ordinal(number):
+    decimal = str(number)
+    if decimal[-1] == '1' and number % 100 != 11:
+        return 'st'
+    elif decimal[-1] == '2' and number % 100 != 12:
+        return 'nd'
+    elif decimal[-1] == '3' and number % 100 != 13:
+        return 'rd'
+    return 'th'
+
+def html_exceptions(content_iter):
+    try:
+        yield from content_iter
+    except Exception as e:
+        yield bottle.template("""
+            <p>Sorry, the requested page caused an error:</p>
+            <pre>{{e.body}}</pre>
+            %if e.exception:
+              <h2>Exception:</h2>
+              <pre>{{repr(e.exception)}}</pre>
+            %end
+            %if e.traceback:
+              <h2>Traceback:</h2>
+              <pre>{{e.traceback}}</pre>
+            %end
+        """, e=e)
 
 ERROR_PAGE_TEMPLATE = """
 %try:
@@ -153,146 +213,27 @@ class Bottle(bottle.Bottle):
 
 application = Bottle()
 
-@application.route('/cloud')
-@application.route('/cloud/progress')
-def cloud_index():
-    """A page listing all Cloud corridors."""
-    def image_from_cloud_chest(cloud_chest):
-        if not cloud_chest.get('exists', True):
-            background_color = '#777'
-        elif cloud_chest['hasSorter']:
-            if cloud_chest['hasOverflow'] and cloud_chest['hasSmartChest']:
-                background_color = 'transparent'
-            else:
-                background_color = '#f00'
-        elif cloud_chest['hasSmartChest']:
-            stackable = item_in_cloud_chest(cloud_chest).get('stackable', True)
-            if stackable is True or stackable > 1:
-                background_color = '#ff0'
-            else:
-                background_color = '#0ff'
-        else:
-            background_color = '#f70'
-        return '<td style="background-color: {};">{}</td>'.format(background_color, item_image(item_in_cloud_chest(cloud_chest), link=cloud_chest['damage'], tooltip=True))
-
-    yield header()
-    yield '<p>The <a href="http://wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="http://{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=host)
-    with open(os.path.join(assets_root, 'json/cloud.json')) as cloud_json:
-        cloud = json.load(cloud_json)
-    explained_colors = set()
-    for _, _, _, _, _, chest in wurstminebot.commands.Cloud.cloud_iter(cloud):
-        if not chest.get('exists', True):
-            if 'gray' not in explained_colors:
-                yield "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>"
-                explained_colors.add('gray')
-        elif chest['hasSorter']:
-            if chest['hasOverflow'] and chest['hasSmartChest']:
-                explained_colors.add('white')
-            else:
-                if 'red' not in explained_colors:
-                    yield '<p>A red background means that the chest has a sorter but the SmartChest and/or the overflow is missing. This can break other SmartChests, so it should be fixed as soon as possible!</p>'
-                    explained_colors.add('red')
-        elif chest['hasSmartChest']:
-            stackable = item_in_cloud_chest(chest).get('stackable', True)
-            if stackable is True or stackable > 1:
-                if 'yellow' not in explained_colors:
-                    yield "<p>A yellow background means that the chest doesn't have a sorter yet.</p>"
-                    explained_colors.add('yellow')
-            else:
-                if 'cyan' not in explained_colors:
-                    yield '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>'
-                    explained_colors.add('cyan')
-        else:
-            if 'orange' not in explained_colors:
-                yield "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>"
-                explained_colors.add('orange')
-    if 'white' in explained_colors and len(explained_colors) > 1:
-        yield '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>'
-    yield """<style type="text/css">
-        .item-table td {
-            box-sizing: content-box;
-            height: 32px;
-            width: 32px;
-        }
-
-        .item-table .left-sep {
-            border-left: 1px solid gray;
-        }
-    </style>"""
-    floors = {}
-    for x, corridor, y, floor, z, chest in wurstminebot.commands.Cloud.cloud_iter(cloud):
-        if y not in floors:
-            floors[y] = floor
-    for y, floor in sorted(floors.items(), key=lambda tup: tup[0]):
-        yield bottle.template("""
-            %import itertools
-            <h2 id="floor{{y}}">{{y}}{{Cloud.ordinal(y)}} floor (y={{73 - 10 * y}})</h2>
-            <table class="item-table" style="margin-left: auto; margin-right: auto;">
-                %for x in range(-3, 4):
-                    %if x > -3:
-                        <colgroup class="left-sep">
-                            <col />
-                            <col />
-                        </colgroup>
-                    %else:
-                        <colgroup>
-                            <col />
-                            <col />
-                        </colgroup>
-                    %end
-                %end
-                <tbody>
-                    %for z_left, z_right in zip(itertools.count(step=2), itertools.count(start=1, step=2)):
-                        %found = False
-                        <tr>
-                            %for x in range(-3, 4):
-                                %if str(x) not in floor:
-                                    <td></td>
-                                    <td></td>
-                                    %continue
-                                %end
-                                %corridor = floor[str(x)]
-                                %if len(corridor) > z_right:
-                                    {{!image(corridor[z_right])}}
-                                %else:
-                                    <td></td>
-                                %end
-                                %if len(corridor) > z_left:
-                                    {{!image(corridor[z_left])}}
-                                    %found = True
-                                %else:
-                                    <td></td>
-                                %end
-                            %end
-                        </tr>
-                        %if not found:
-                            %break
-                        %end
-                    %end
-                </tbody>
-            </table>
-        """, Cloud=wurstminebot.commands.Cloud, image=image_from_cloud_chest, floor=floor, y=y)
-    yield footer(linkify_headers=True)
+application.route('/cloud')(alltheitems.cloud.index)
 
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():
     """The “Craft ALL the items!” image."""
-    return bottle.static_file('static/img/alltheitems.png', root=document_root)
+    return bottle.static_file('static/img/alltheitems.png', root=str(document_root))
 
 @application.route('/assets/alltheitems2.png')
 def image_alltheitems2():
     """The “Craft ALL the items?” image."""
-    return bottle.static_file('static/img/alltheitems2.png', root=document_root)
+    return bottle.static_file('static/img/alltheitems2.png', root=str(document_root))
 
 @application.route('/favicon.ico')
 def show_favicon():
     """The favicon, a small version of the Wurstpick image. Original Wurstpick image by katethie, icon version by someone (maybe bl1nk)."""
-    return bottle.static_file('img/favicon.ico', root=assets_root)
+    return bottle.static_file('img/favicon.ico', root=str(assets_root))
 
 @application.route('/')
 def show_index():
     """The index page."""
-    return bottle.static_file('static/index.html', root=document_root)
+    return bottle.static_file('static/index.html', root=str(document_root))
 
 @application.route('/block/<plugin>/<block_id>/<damage:int>')
 def show_block_by_damage(plugin, block_id, damage):
