@@ -8,12 +8,12 @@ import sys
 
 sys.path.append('/opt/py')
 
-import api
 import bottle
 import contextlib
 import json
 import pathlib
 import re
+import sys
 
 bottle.debug()
 
@@ -27,11 +27,14 @@ if is_dev:
     assets_root = pathlib.Path('/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/branch/dev')
     document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev')
     host = 'dev.wurstmineberg.de'
+    sys.path.insert(1, '/opt/git/github.com/wurstmineberg/api.wurstmineberg.de/branch/dev')
+    import api
     api.CONFIG_PATH = '/opt/wurstmineberg/config/devapi.json'
 else:
     assets_root = pathlib.Path('/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master')
     document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master')
     host = 'wurstmineberg.de'
+    import api
 
 def header(*, title='All The Items'):
     if is_dev:
