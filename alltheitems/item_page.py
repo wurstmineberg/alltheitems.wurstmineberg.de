@@ -92,7 +92,7 @@ def item_page(item_stub, block=False):
         """
         #TODO general
         yield bottle.template("""
-            <div id="general" class="section hidden">
+            <div id="general" class="section">
                 <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
             </div>
         """, host=ati.host)
@@ -106,7 +106,7 @@ def item_page(item_stub, block=False):
                 %effect_plugin = None
                 %effect_id = None
             %end
-            <div id="obtaining" class="section">
+            <div id="obtaining" class="section hidden">
                 %i = 0
                 %if block and 'itemID' in item_info:
                     %item = ati.item_info_from_stub(item_stub)
