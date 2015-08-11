@@ -212,9 +212,6 @@ class Bottle(bottle.Bottle):
 
 application = Bottle()
 
-import alltheitems.cloud
-import alltheitems.item_page
-
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():
     """The “Craft ALL the items!” image."""
@@ -238,16 +235,19 @@ def show_index():
 @application.route('/cloud')
 def cloud_index():
     """A page listing all Cloud corridors."""
+    import alltheitems.cloud
     return alltheitems.cloud.index()
 
 @application.route('/block/<plugin>/<block_id>')
 def show_block_by_id(plugin, block_id):
     """A page with detailed information about the block with the given ID."""
+    import alltheitems.item_page
     return alltheitems.item_page.item_page(plugin + ':' + block_id, block=True)
 
 @application.route('/block/<plugin>/<block_id>/<damage:int>')
 def show_block_by_damage(plugin, block_id, damage):
     """A page with detailed information about the block with the given ID and damage value."""
+    import alltheitems.item_page
     return alltheitems.item_page.item_page({
         'damage': damage,
         'id': plugin + ':' + block_id
@@ -256,6 +256,7 @@ def show_block_by_damage(plugin, block_id, damage):
 @application.route('/block/<plugin>/<block_id>/effect/<effect_plugin>/<effect_id>')
 def show_block_by_effect(plugin, block_id, effect_plugin, effect_id):
     """A page with detailed information about the block with the given ID and effect."""
+    import alltheitems.item_page
     return alltheitems.item_page.item_page({
         'effect': effect_plugin + ':' + effect_id,
         'id': plugin + ':' + block_id
@@ -264,11 +265,13 @@ def show_block_by_effect(plugin, block_id, effect_plugin, effect_id):
 @application.route('/item/<plugin>/<item_id>')
 def show_item_by_id(plugin, item_id):
     """A page with detailed information about the item with the given ID."""
+    import alltheitems.item_page
     return alltheitems.item_page.item_page(plugin + ':' + item_id)
 
 @application.route('/item/<plugin>/<item_id>/<damage:int>')
 def show_item_by_damage(plugin, item_id, damage):
     """A page with detailed information about the item with the given ID and damage value."""
+    import alltheitems.item_page
     return alltheitems.item_page.item_page({
         'damage': damage,
         'id': plugin + ':' + item_id
@@ -277,6 +280,7 @@ def show_item_by_damage(plugin, item_id, damage):
 @application.route('/item/<plugin>/<item_id>/effect/<effect_plugin>/<effect_id>')
 def show_item_by_effect(plugin, item_id, effect_plugin, effect_id):
     """A page with detailed information about the item with the given ID and effect."""
+    import alltheitems.item_page
     return alltheitems.item_page.item_page({
         'effect': effect_plugin + ':' + effect_id,
         'id': plugin + ':' + item_id
