@@ -7,7 +7,7 @@ def normalize_item_info(item_info, item_stub, block=False):
         bottle.abort(404, 'There is no block with the ID {}. There is however an item with that ID.'.format(item_stub['id']))
     if not block and 'itemID' not in item_info:
         bottle.abort(404, 'There is no item with the ID {}. There is however a block with that ID.'.format(item_stub['id']))
-    if 'blockInfo' in block:
+    if 'blockInfo' in item_info:
         if block:
             item_info.update(item_info['blockInfo'])
         del item_info['blockInfo']
