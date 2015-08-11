@@ -75,83 +75,85 @@ def item_page(item_stub, block=False):
         yield footer()
         return
     yield item_title(item_info, item_stub, block=block)
-    # tab bar
-    yield """
-        <ul id="pagination" class="nav nav-tabs">
-            <li><a id="tab-general" class="tab-item" href="#general">General</a></li>
-            <li><a id="tab-obtaining" class="tab-item" href="#obtaining">Obtaining</a></li>
-            <li><a id="tab-usage" class="tab-item" href="#usage">Usage</a></li>
-        </ul>
-        <style type="text/css">
-            .section p:first-child {
-                margin-top: 20px;
-            }
-        </style>
-    """
-    #TODO general
-    yield """
-        <div id="general" class="section hidden">
-            <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
-        </div>
-    """
-    # obtaining
-    yield bottle.template("""
-        %import json
-        %plugin, item_id = item_stub['id'].split(':', 1)
-        %if 'effect' in item_stub:
-            effect_plugin, effect_id = item_stub['effect'].split(':', 1)
-        %else:
-            effect_plugin = None
-            effect_id = None
-        %end
-        <div id="obtaining" class="section">
-            %i = 0
-            %if block and 'itemID' in item_info:
-                %item = ati.item_info_from_stub(item_stub)
-                %normalize_item_info(item, item_stub, block=False)
-                %if 'whenPlaced' not in item:
-                    <p>{{item_info['name']}} can be obtained by placing <a href="{{'/item/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/item/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/item/{}/{}'.format(plugin, item_id)}}">{{item['name'] if item['name'] != item_info['name'] else 'its item form'}}</a>.</p>
-                    %i += 1
-                %end
+    def body():
+        # tab bar
+        yield """
+            <ul id="pagination" class="nav nav-tabs">
+                <li><a id="tab-general" class="tab-item" href="#general">General</a></li>
+                <li><a id="tab-obtaining" class="tab-item" href="#obtaining">Obtaining</a></li>
+                <li><a id="tab-usage" class="tab-item" href="#usage">Usage</a></li>
+            </ul>
+            <style type="text/css">
+                .section p:first-child {
+                    margin-top: 20px;
+                }
+            </style>
+        """
+        #TODO general
+        yield """
+            <div id="general" class="section hidden">
+                <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
+            </div>
+        """
+        # obtaining
+        yield bottle.template("""
+            %import json
+            %plugin, item_id = item_stub['id'].split(':', 1)
+            %if 'effect' in item_stub:
+                effect_plugin, effect_id = item_stub['effect'].split(':', 1)
+            %else:
+                effect_plugin = None
+                effect_id = None
             %end
-            %if (not block) and 'blockID' in item_info and item_info.get('dropsSelf', True):
-                %block_info = ati.item_info_from_stub(item_stub)
-                %normalize_item_info(block_info, item_stub, block=True)
-                <p>{{item_info['name']}} can be obtained by mining <a href="{{'/block/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/block/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/block/{}/{}'.format(plugin, item_id)}}">{{block_info['name'] if block_info['name'] != item_info['name'] else 'its block form'}}</a>{{'.' if item_info.get('dropsSelf', True) is True else ', with the following properties:'}}</p>
-                %if item_info.get('dropsSelf', True) is not True:
-                    <pre style="text-align: left;">{{json.dumps(item['dropsSelf'], indent=4)}}</pre>
-                %end
-                %i += 1
-            %end
-            %if len(item_info.get('obtaining', [])) > 0:
-                %for method in item_info['obtaining']:
-                    %if i > 0:
-                        <hr />
+            <div id="obtaining" class="section">
+                %i = 0
+                %if block and 'itemID' in item_info:
+                    %item = ati.item_info_from_stub(item_stub)
+                    %normalize_item_info(item, item_stub, block=False)
+                    %if 'whenPlaced' not in item:
+                        <p>{{item_info['name']}} can be obtained by placing <a href="{{'/item/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/item/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/item/{}/{}'.format(plugin, item_id)}}">{{item['name'] if item['name'] != item_info['name'] else 'its item form'}}</a>.</p>
+                        %i += 1
                     %end
-                    <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. It looks like this:</p>
-                    <pre style="text-align: left;">{{json.dumps(method, indent=4)}}</pre>
+                %end
+                %if (not block) and 'blockID' in item_info and item_info.get('dropsSelf', True):
+                    %block_info = ati.item_info_from_stub(item_stub)
+                    %normalize_item_info(block_info, item_stub, block=True)
+                    <p>{{item_info['name']}} can be obtained by mining <a href="{{'/block/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/block/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/block/{}/{}'.format(plugin, item_id)}}">{{block_info['name'] if block_info['name'] != item_info['name'] else 'its block form'}}</a>{{'.' if item_info.get('dropsSelf', True) is True else ', with the following properties:'}}</p>
+                    %if item_info.get('dropsSelf', True) is not True:
+                        <pre style="text-align: left;">{{json.dumps(item['dropsSelf'], indent=4)}}</pre>
+                    %end
                     %i += 1
                 %end
-            %end
-            %if i == 0:
-                %if block:
-                    %if 'effect' in item_stub:
-                        <p>No known method exists for obtaining blocks with effect data.
+                %if len(item_info.get('obtaining', [])) > 0:
+                    %for method in item_info['obtaining']:
+                        %if i > 0:
+                            <hr />
+                        %end
+                        <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. It looks like this:</p>
+                        <pre style="text-align: left;">{{json.dumps(method, indent=4)}}</pre>
+                        %i += 1
+                    %end
+                %end
+                %if i == 0:
+                    %if block:
+                        %if 'effect' in item_stub:
+                            <p>No known method exists for obtaining blocks with effect data.
+                        %else:
+                            <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#setblock">setblock</a> &lt;x&gt; &lt;y&gt; &lt;x&gt; {{item_stub['id']}}{{' {}'.format(item_stub['damage']) if 'damage' in item_stub else ''}}</code>.</p>
+                        %end
                     %else:
-                        <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#setblock">setblock</a> &lt;x&gt; &lt;y&gt; &lt;x&gt; {{item_stub['id']}}{{' {}'.format(item_stub['damage']) if 'damage' in item_stub else ''}}</code>.</p>
+                        <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '[amount]'}}</code>.</p>
                     %end
-                %else:
-                    <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '[amount]'}}</code>.</p>
                 %end
-            %end
-        </div>
-    """, host=host, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block)
-    #TODO usage
-    yield """
-        <div id="usage" class="section hidden">
-            <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
-        </div>
-    """
+            </div>
+        """, host=host, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block)
+        #TODO usage
+        yield """
+            <div id="usage" class="section hidden">
+                <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
+            </div>
+        """
+    yield from ati.html_exceptions(body())
     yield footer(additional_js="""
         selectTabWithID("tab-general");
         bindTabEvents();
