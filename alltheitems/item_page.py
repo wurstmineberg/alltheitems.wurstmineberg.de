@@ -1,5 +1,5 @@
-import api
 import alltheitems.__main__ as ati
+import api
 import bottle
 
 def normalize_item_info(item_info, item_stub, block=False):
@@ -69,11 +69,11 @@ def item_page(item_stub, block=False):
         item_stub = {'id': item_stub}
     item_info = api.api_item_by_id(item_stub['id'])
     disambig = normalize_item_info(item_info, item_stub, block=block)
-    yield header(title=item_info.get('name', item_stub['id']))
+    yield ati.header(title=item_info.get('name', item_stub['id']))
     if disambig:
         yield item_title(item_info, item_stub, block=block)
         yield disambig
-        yield footer()
+        yield ati.footer()
         return
     yield item_title(item_info, item_stub, block=block)
     def body():
@@ -155,7 +155,7 @@ def item_page(item_stub, block=False):
             </div>
         """, host=ati.host)
     yield from ati.html_exceptions(body())
-    yield footer(additional_js="""
+    yield ati.footer(additional_js="""
         selectTabWithID("tab-general");
         bindTabEvents();
     """)
