@@ -39,18 +39,18 @@ else:
 def header(*, title='All The Items'):
     if is_dev:
         title = '[DEV] ' + title
-    return """<!DOCTYPE html>
+    return bottle.template("""<!DOCTYPE html>
     <html>
         <head>
             <meta charset="utf-8" />
-            <title>{title}</title>
+            <title>{{title}}</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <meta name="description" content="Searchable Minecraft blocks and items database" />
             <meta name="author" content="Wurstmineberg" />
             <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" />
             <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" />
-            <link rel="stylesheet" href="http://assets.{host}/css/common.css" />
-            <link rel="stylesheet" href="http://assets.{host}/css/responsive.css" />
+            <link rel="stylesheet" href="http://assets.{{host}}/css/common.css" />
+            <link rel="stylesheet" href="http://assets.{{host}}/css/responsive.css" />
         </head>
         <body>
             <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -61,7 +61,7 @@ def header(*, title='All The Items'):
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="/">All The Items</a>""".format(title=title, host=host) + ("""
+                    <a class="navbar-brand" href="/">All The Items</a>""", title=title, host=host) + ("""
                     <span style="color: red; left: 100; position: absolute; top: 30; transform: rotate(-10deg) scale(2); z-index: 10;">[DEV]</span>
                     """ if is_dev else '') + """
                 </div>
@@ -74,7 +74,7 @@ def header(*, title='All The Items'):
                 -->
             </nav>
             <div class="container" style="text-align: center;">
-    """.format(title=title, host=host)
+    """
 
 def footer(*, linkify_headers=False, additional_js=''):
     return """
@@ -213,6 +213,7 @@ class Bottle(bottle.Bottle):
 application = Bottle()
 
 import alltheitems.cloud
+import alltheites.item_page
 
 @application.route('/assets/alltheitems.png')
 def image_alltheitems():
@@ -239,168 +240,47 @@ def cloud_index():
     """A page listing all Cloud corridors."""
     return alltheitems.cloud.index()
 
-@application.route('/block/<plugin>/<block_id>/<damage:int>')
-def show_block_by_damage(plugin, block_id, damage):
-    block = api.api_item_by_damage(plugin + ':' + block_id, damage)
-    if 'blockID' not in block:
-        bottle.abort(404, 'There is no block with the ID {}:{}. There is however an item with that ID.'.format(plugin, block_id))
-    if 'blockInfo' in block:
-        block.update(block['blockInfo'])
-        del block['blockInfo']
-    yield header()
-    yield bottle.template("""
-        <h1 style="font-size: 44px;">{{!item_image(block, style='vertical-align: baseline;', block=True)}}&thinsp;{{block['name']}}</h1>
-        <p class="muted">
-            {{block['stringID'].split(':')[0]}}:{{!'' if damage is None else '<a href="/block/{}/{}">'.format(plugin, block_id)}}{{':'.join(block['stringID'].split(':')[1:])}}{{!'' if damage is None else '</a>/{}'.format(damage)}}
-        </p>
-        %if damage is None:
-            <%
-                damage_values = sorted(int(damage) for damage in block.get('damageValues', {}))
-                if 0 not in damage_values:
-                    damage_values[:0] = [0]
-                end
-            %>
-            <p>
-                Damage values: {{!' '.join(item_image(api.api_item_by_damage(plugin + ':' + block_id, damage), link=damage, block=True, tooltip=True) for damage in damage_values)}}
-            </p>
-        %end
-    """, api=api, item_image=item_image, plugin=plugin, block_id=block_id, block=block, damage=damage)
-    yield """
-        <ul id="pagination" class="nav nav-tabs">
-            <li><a id="tab-obtaining" class="tab-item" href="#obtaining">Obtaining</a></li>
-            <li><a id="tab-usage" class="tab-item" href="#usage">Usage</a></li>
-        </ul>
-    """
-    yield """<style type="text/css">
-        .section p:first-child {
-            margin-top: 20px;
-        }
-    </style>"""
-    yield bottle.template("""
-        %import json
-        <div id="obtaining" class="section">
-            %i = 0
-            %if 'itemID' in block:
-                %item = api.api_item_by_damage(plugin + ':' + block_id, damage)
-                <p>{{block['name']}} can be obtained by placing <a href="{{'/item/{}/{}'.format(plugin, block_id) if damage is None else '/item/{}/{}/{}'.format(plugin, block_id, damage)}}">{{item['name'] if item['name'] != block['name'] else 'its item form'}}</a>.</p>
-                %i += 1
-            %end
-            %if len(block.get('obtaining', [])) > 0:
-                %for method in block['obtaining']:
-                    <%
-                        if method['type'] in ('bonusChest', 'chest', 'craftingShaped', 'craftingShapeless', 'entityDeath', 'mining', 'smelting', 'trading'):
-                            continue # this is a method of obtaining the item, not the block
-                        end
-                    %>
-                    %if i > 0:
-                        <hr />
-                    %end
-                    <p>{{block['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. It looks like this:</p>
-                    <pre style="text-align: left;">{{json.dumps(method, indent=4)}}</pre>
-                    %i += 1
-                %end
-            %end
-            %if i == 0:
-                %if damage is None:
-                    <p>{{block['name']}} is unobtainable in Survival or has no method of obtaining common to all damage values. Click on one of the icons above to view them.</p>
-                %else:
-                    <p>{{block['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#setblock">setblock</a> &lt;x&gt; &lt;y&gt; &lt;x&gt; {{block['stringID']}}{{'' if damage == 0 else ' {}'.format(damage)}}</code>.</p>
-                %end
-            %end
-        </div>
-        <div id="usage" class="section hidden">
-            <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
-        </div>
-    """, host=host, api=api, plugin=plugin, block_id=block_id, block=block, damage=damage)
-    yield footer(additional_js="""
-        selectTabWithID("tab-obtaining");
-        bindTabEvents();
-    """)
-
 @application.route('/block/<plugin>/<block_id>')
 def show_block_by_id(plugin, block_id):
-    return show_block_by_damage(plugin, block_id, None)
+    """A page with detailed information about the block with the given ID."""
+    return item_page.item_page(plugin + ':' + block_id, block=True)
 
-@application.route('/item/<plugin>/<item_id>/<damage:int>')
-def show_item_by_damage(plugin, item_id, damage):
-    item = api.api_item_by_damage(plugin + ':' + item_id, damage)
-    if 'itemID' not in item:
-        bottle.abort(404, 'There is no item with the ID {}:{}. There is however a block with that ID.'.format(plugin, item_id))
-    yield header()
-    yield bottle.template("""
-        <h1 style="font-size: 44px;">{{!item_image(item, style='vertical-align: baseline;')}}&thinsp;{{item['name']}}</h1>
-        <p class="muted">
-            {{item['stringID'].split(':')[0]}}:{{!'' if damage is None else '<a href="/item/{}/{}">'.format(plugin, item_id)}}{{':'.join(item['stringID'].split(':')[1:])}}{{!'' if damage is None else '</a>/{}'.format(damage)}}
-        </p>
-        %if damage is None:
-            <%
-                damage_values = sorted(int(damage) for damage in item.get('damageValues', {}))
-                if 0 not in damage_values:
-                    damage_values[:0] = [0]
-                end
-            %>
-            <p>
-                Damage values: {{!' '.join(item_image(api.api_item_by_damage(plugin + ':' + item_id, damage), link=damage, tooltip=True) for damage in damage_values)}}
-            </p>
-        %end
-    """, api=api, item_image=item_image, plugin=plugin, item_id=item_id, item=item, damage=damage)
-    yield """
-        <ul id="pagination" class="nav nav-tabs">
-            <li><a id="tab-obtaining" class="tab-item" href="#obtaining">Obtaining</a></li>
-            <li><a id="tab-usage" class="tab-item" href="#usage">Usage</a></li>
-        </ul>
-    """
-    yield """<style type="text/css">
-        .section p:first-child {
-            margin-top: 20px;
-        }
-    </style>"""
-    yield bottle.template("""
-        %import json
-        <div id="obtaining" class="section">
-            %i = 0
-            %if 'blockID' in item and item.get('dropsSelf', True):
-                <p>{{item['name']}} can be obtained by mining <a href="{{'/block/{}/{}'.format(plugin, item_id) if damage is None else '/block/{}/{}/{}'.format(plugin, item_id, damage)}}">{{item['blockInfo']['name'] if 'blockInfo' in item and 'name' in item['blockInfo'] and item['blockInfo']['name'] != item['name'] else 'its block form'}}</a>{{'.' if item.get('dropsSelf', True) is True else ' with the following properties:'}}</p>
-                %if item.get('dropsSelf', True) is not True:
-                    <pre style="text-align: left;">{{json.dumps(item['dropsSelf'], indent=4)}}</pre>
-                %end
-                %i += 1
-            %end
-            %if len(item.get('obtaining', [])) > 0:
-                %for method in item['obtaining']:
-                    <%
-                        if method['type'] in ('structure',):
-                            continue # this is a method of obtaining the block, not the item
-                        end
-                    %>
-                    %if i > 0:
-                        <hr />
-                    %end
-                    <p>{{item['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. It looks like this:</p>
-                    <pre style="text-align: left;">{{json.dumps(method, indent=4)}}</pre>
-                    %i += 1
-                %end
-            %end
-            %if i == 0:
-                %if damage is None:
-                    <p>{{item['name']}} is unobtainable in Survival or has no method of obtaining common to all damage values. Click on one of the icons above to view them.</p>
-                %else:
-                    <p>{{item['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item['stringID']}} {{'[amount]' if damage == 0 else '<amount> {}'.format(damage)}}</code>.</p>
-                %end
-            %end
-        </div>
-        <div id="usage" class="section hidden">
-            <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
-        </div>
-    """, host=host, plugin=plugin, item_id=item_id, item=item, damage=damage)
-    yield footer(additional_js="""
-        selectTabWithID("tab-obtaining");
-        bindTabEvents();
-    """)
+@application.route('/block/<plugin>/<block_id>/<damage:int>')
+def show_block_by_damage(plugin, block_id, damage):
+    """A page with detailed information about the block with the given ID and damage value."""
+    return item_page.item_page({
+        'damage': damage,
+        'id': plugin + ':' + block_id
+    }, block=True)
+
+@application.route('/block/<plugin>/<block_id>/effect/<effect_plugin>/<effect_id>')
+def show_block_by_effect(plugin, block_id, effect_plugin, effect_id):
+    """A page with detailed information about the block with the given ID and effect."""
+    return item_page.item_page({
+        'effect': effect_plugin + ':' + effect_id,
+        'id': plugin + ':' + block_id
+    }, block=True)
 
 @application.route('/item/<plugin>/<item_id>')
 def show_item_by_id(plugin, item_id):
-    return show_item_by_damage(plugin, item_id, None)
+    """A page with detailed information about the item with the given ID."""
+    return item_page.item_page(plugin + ':' + item_id)
+
+@application.route('/item/<plugin>/<item_id>/<damage:int>')
+def show_item_by_damage(plugin, item_id, damage):
+    """A page with detailed information about the item with the given ID and damage value."""
+    return item_page.item_page({
+        'damage': damage,
+        'id': plugin + ':' + item_id
+    })
+
+@application.route('/item/<plugin>/<item_id>/effect/<effect_plugin>/<effect_id>')
+def show_item_by_effect(plugin, item_id, effect_plugin, effect_id):
+    """A page with detailed information about the item with the given ID and effect."""
+    return item_page.item_page({
+        'effect': effect_plugin + ':' + effect_id,
+        'id': plugin + ':' + item_id
+    })
 
 if __name__ == '__main__':
     bottle.run(app=application, host='0.0.0.0', port=8081)
