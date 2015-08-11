@@ -141,13 +141,44 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
     else:
         return '<a href="{}">{}</a>'.format(link, ret)
 
-def item_info_from_stub(item_stub):
+def item_info_from_stub(item_stub, block=False):
+    if isinstance(item_stub, str):
+        item_stub = {'id': item_stub}
+    item_info = api.api_item_by_id(item_stub['id'])
+    if block and 'blockID' not in item_info:
+        raise ValueError('There is no block with the ID {}. There is however an item with that ID.'.format(item_stub['id']))
+    if not block and 'itemID' not in item_info:
+        raise ValueError('There is no item with the ID {}. There is however a block with that ID.'.format(item_stub['id']))
+    if 'blockInfo' in item_info:
+        if block:
+            item_info.update(item_info['blockInfo'])
+        del item_info['blockInfo']
     if 'damage' in item_stub:
-        return api.api_item_by_damage(item_stub['id'], item_stub['damage'])
+        if 'effect' in item_stub:
+            raise ValueError('Tried to make an info page for {} with both damage and effect.'.format('a block' if block else 'an item'))
+        elif 'damageValues' in item_info:
+            if str(item_stub['damage']) in item_info['damageValues']:
+                item_info.update(item_info['damageValues'][str(item_stub['damage'])])
+                del item_info['damageValues']
+            else:
+                raise ValueError('The {} {} does not occur with the damage value {}.'.format('block' if block else 'item', item_stub['id'], item_stub['damage']))
+        else:
+            raise ValueError('The {} {} has no damage values.'.format('block' if block else 'item', item_stub['id']))
     elif 'effect' in item_stub:
-        return api.api_item_by_effect(item_stub['id'], item_stub['effect'])
-    else:
-        return api.api_item_by_id(item_stub['id'])
+        effect_plugin, effect_id = item_stub['effect'].split(':')
+        if 'effects' in item_info:
+            if effect_plugin in item_info['effects'] and effect_id in item_info['effects'][effect_plugin]:
+                item_info.update(item_info['effects'][effect_plugin][effect_id])
+                del item_info['effects']
+            else:
+                raise ValueError('The {} {} does not occur with the effect {}.'.format('block' if block else 'item', item_stub['id'], item_stub['effect']))
+        else:
+            raise ValueError('The {} {} has no effect values.'.format('block' if block else 'item', item_stub['id']))
+    elif 'damageValues' in item_info:
+        raise ValueError('Must specify damage')
+    elif 'effects' in item_info:
+        raise ValueError('Must specify effect')
+    return item_info
 
 def item_stub_image(item_stub, *, block=False, link=True, tooltip=True):
     if link is True:
@@ -158,7 +189,7 @@ def item_stub_image(item_stub, *, block=False, link=True, tooltip=True):
             link = item_stub['effect']
         else:
             link = None # base item
-    return item_image(item_info_from_stub(item_stub), block=block, link=link, tooltip=tooltip)
+    return item_image(item_info_from_stub(item_stub, block=block), block=block, link=link, tooltip=tooltip)
 
 def ordinal(number):
     decimal = str(number)

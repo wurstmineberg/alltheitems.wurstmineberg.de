@@ -109,16 +109,14 @@ def item_page(item_stub, block=False):
             <div id="obtaining" class="section hidden">
                 %i = 0
                 %if block and 'itemID' in item_info:
-                    %item = ati.item_info_from_stub(item_stub)
-                    %normalize_item_info(item, item_stub, block=False)
+                    %item = ati.item_info_from_stub(item_stub, block=False)
                     %if 'whenPlaced' not in item:
                         <p>{{item_info['name']}} can be obtained by placing <a href="{{'/item/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/item/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/item/{}/{}'.format(plugin, item_id)}}">{{item['name'] if item['name'] != item_info['name'] else 'its item form'}}</a>.</p>
                         %i += 1
                     %end
                 %end
                 %if (not block) and 'blockID' in item_info and item_info.get('dropsSelf', True):
-                    %block_info = ati.item_info_from_stub(item_stub)
-                    %normalize_item_info(block_info, item_stub, block=True)
+                    %block_info = ati.item_info_from_stub(item_stub, block=True)
                     <p>{{item_info['name']}} can be obtained by mining <a href="{{'/block/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/block/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/block/{}/{}'.format(plugin, item_id)}}">{{block_info['name'] if block_info['name'] != item_info['name'] else 'its block form'}}</a>{{'.' if item_info.get('dropsSelf', True) is True else ', with the following properties:'}}</p>
                     %if item_info.get('dropsSelf', True) is not True:
                         <pre style="text-align: left;">{{json.dumps(item['dropsSelf'], indent=4)}}</pre>
