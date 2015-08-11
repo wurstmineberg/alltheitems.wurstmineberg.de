@@ -101,10 +101,10 @@ def item_page(item_stub, block=False):
             %import json
             %plugin, item_id = item_stub['id'].split(':', 1)
             %if 'effect' in item_stub:
-                effect_plugin, effect_id = item_stub['effect'].split(':', 1)
+                %effect_plugin, effect_id = item_stub['effect'].split(':', 1)
             %else:
-                effect_plugin = None
-                effect_id = None
+                %effect_plugin = None
+                %effect_id = None
             %end
             <div id="obtaining" class="section">
                 %i = 0
