@@ -1,3 +1,4 @@
+import api
 import alltheitems.__main__ as ati
 import bottle
 
@@ -90,11 +91,11 @@ def item_page(item_stub, block=False):
             </style>
         """
         #TODO general
-        yield """
+        yield bottle.template("""
             <div id="general" class="section hidden">
                 <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
             </div>
-        """
+        """, host=ati.host)
         # obtaining
         yield bottle.template("""
             %import json
@@ -146,13 +147,13 @@ def item_page(item_stub, block=False):
                     %end
                 %end
             </div>
-        """, host=host, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block)
+        """, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block)
         #TODO usage
-        yield """
+        yield bottle.template("""
             <div id="usage" class="section hidden">
                 <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
             </div>
-        """
+        """, host=ati.host)
     yield from ati.html_exceptions(body())
     yield footer(additional_js="""
         selectTabWithID("tab-general");
