@@ -72,17 +72,17 @@ def header(*, title='All The Items'):
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true"><i class="fa fa-book"></i> Wiki<b class="caret"></b></a>
                             <ul class="dropdown-menu p-navigation" id="p-navigation">
-                                <li id="n-mainpage-description"><a href="//wiki.{{host}}/" title="Visit the main page [ctrl-alt-z]" accesskey="z">Main page</a></li>
-                                <li id="n-currentevents"><a href="//wiki.{{host}}/Wurstmineberg_Wiki:Current_events" title="Find background information on current events">Current events</a></li>
-                                <li id="n-recentchanges"><a href="//wiki.{{host}}/Special:RecentChanges" title="A list of recent changes in the wiki [ctrl-alt-r]" accesskey="r">Recent changes</a></li>
-                                <li id="n-randompage"><a href="//wiki.{{host}}/Special:Random" title="Load a random page [ctrl-alt-x]" accesskey="x">Random page</a></li>
+                                <li id="n-mainpage-description"><a href="http://wiki.{{host}}/" title="Visit the main page [ctrl-alt-z]" accesskey="z">Main page</a></li>
+                                <li id="n-currentevents"><a href="http://wiki.{{host}}/Wurstmineberg_Wiki:Current_events" title="Find background information on current events">Current events</a></li>
+                                <li id="n-recentchanges"><a href="http://wiki.{{host}}/Special:RecentChanges" title="A list of recent changes in the wiki [ctrl-alt-r]" accesskey="r">Recent changes</a></li>
+                                <li id="n-randompage"><a href="http://wiki.{{host}}/Special:Random" title="Load a random page [ctrl-alt-x]" accesskey="x">Random page</a></li>
                                 <li id="n-help"><a href="https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Contents" title="The place to find out">Help</a></li>
                             </ul>
                         </li>
                         <li class="dropdown active">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true"><i class="fa fa-ellipsis-h"></i> More<b class="caret"></b></a>
                             <ul class="dropdown-menu">
-                                <li><a href="//alltheitems.{{host}}/">All The Items</a></li>
+                                <li><a href="http://alltheitems.{{host}}/">All The Items</a></li>
                             </ul>
                         </li>
                     </ul>
