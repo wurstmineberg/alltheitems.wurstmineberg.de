@@ -157,6 +157,12 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
         else:
             # damage value
             return '<a href="/{}/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link, ret)
+    elif isinstance(link, dict):
+        if 'tagValue' in link:
+            # tag variant
+            return '<a href="/{}/{}/{}/tag/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link['tagValue'])
+        else:
+            raise ValueError('Invalid link field')
     elif isinstance(link, str) and re.match('[0-9a-z_]+:[0-9a-z_]+', link):
         # effect
         string_id = item_info['stringID'].split(':')
@@ -184,6 +190,8 @@ def item_info_from_stub(item_stub, block=False):
     if 'damage' in item_stub:
         if 'effect' in item_stub:
             raise ValueError('Tried to make an info page for {} with both damage and effect.'.format('a block' if block else 'an item'))
+        elif 'tagValue' in item_stub:
+            raise ValueError('Tried to make an info page for {} with both damage and tag.'.format('a block' if block else 'an item'))
         elif 'damageValues' in item_info:
             if str(item_stub['damage']) in item_info['damageValues']:
                 item_info.update(item_info['damageValues'][str(item_stub['damage'])])
@@ -194,7 +202,9 @@ def item_info_from_stub(item_stub, block=False):
             raise ValueError('The {} {} has no damage values.'.format('block' if block else 'item', item_stub['id']))
     elif 'effect' in item_stub:
         effect_plugin, effect_id = item_stub['effect'].split(':')
-        if 'effects' in item_info:
+        if 'tagValue' in item_stub:
+            raise ValueError('Tried to make an info page for {} with both effect and tag.'.format('a block' if block else 'an item'))
+        elif 'effects' in item_info:
             if effect_plugin in item_info['effects'] and effect_id in item_info['effects'][effect_plugin]:
                 item_info.update(item_info['effects'][effect_plugin][effect_id])
                 del item_info['effects']
@@ -202,10 +212,20 @@ def item_info_from_stub(item_stub, block=False):
                 raise ValueError('The {} {} does not occur with the effect {}.'.format('block' if block else 'item', item_stub['id'], item_stub['effect']))
         else:
             raise ValueError('The {} {} has no effect values.'.format('block' if block else 'item', item_stub['id']))
+    elif 'tagValue' in item_stub:
+        if 'tagPath' in item_info:
+            if str(item_stub['tagValue']) in item_info['tagVariants']:
+                item_info.update(item_info['tagVariants'][str(item_stub['tagValue'])])
+                del item_info['tagPath']
+                del item_info['tagVariants']
+            else:
+                raise ValueError('The {} {} does not occur with the tag variant {}.'.format('block' if block else 'item', item_stub['id'], item_stub['tagValue']))
     elif 'damageValues' in item_info:
         raise ValueError('Must specify damage')
     elif 'effects' in item_info:
         raise ValueError('Must specify effect')
+    elif 'tagPath' in item_info:
+        raise ValueError('Must specify tag value')
     return item_info
 
 def item_stub_image(item_stub, *, block=False, link=True, tooltip=True):
@@ -215,6 +235,8 @@ def item_stub_image(item_stub, *, block=False, link=True, tooltip=True):
             link = item_stub['damage']
         elif 'effect' in item_stub:
             link = item_stub['effect']
+        elif 'tagValue' in item_stub:
+            link = {'tagValue': item_stub['tagValue']}
         else:
             link = None # base item
     return item_image(item_info_from_stub(item_stub, block=block), block=block, link=link, tooltip=tooltip)
@@ -321,6 +343,15 @@ def show_block_by_effect(plugin, block_id, effect_plugin, effect_id):
         'id': plugin + ':' + block_id
     }, block=True)
 
+@application.route('/block/<plugin>/<block_id>/tag/<tag_value>')
+def show_block_by_tag(plugin, block_id, tag_value):
+    """A page with detailed information about the block with the given ID and tag variant."""
+    import alltheitems.item_page
+    return alltheitems.item_page.item_page({
+        'id': plugin + ':' + block_id,
+        'tagValue': tag_value
+    }, block=True)
+
 @application.route('/item/<plugin>/<item_id>')
 def show_item_by_id(plugin, item_id):
     """A page with detailed information about the item with the given ID."""
@@ -343,6 +374,15 @@ def show_item_by_effect(plugin, item_id, effect_plugin, effect_id):
     return alltheitems.item_page.item_page({
         'effect': effect_plugin + ':' + effect_id,
         'id': plugin + ':' + item_id
+    })
+
+@application.route('/item/<plugin>/<block_id>/tag/<tag_value>')
+def show_item_by_tag(plugin, item_id, tag_value):
+    """A page with detailed information about the item with the given ID and tag variant."""
+    import alltheitems.item_page
+    return alltheitems.item_page.item_page({
+        'id': plugin + ':' + item_id,
+        'tagValue': tag_value
     })
 
 if __name__ == '__main__':

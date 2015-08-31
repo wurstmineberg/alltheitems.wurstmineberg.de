@@ -14,6 +14,8 @@ def normalize_item_info(item_info, item_stub, block=False):
     if 'damage' in item_stub:
         if 'effect' in item_stub:
             bottle.abort(500, 'Tried to make an info page for {} with both damage and effect.'.format('a block' if block else 'an item'))
+        elif 'tagValue' in item_stub:
+            bottle.abort(500, 'Tried to make an info page for {} with both damage and tag.'.format('a block' if block else 'an item'))
         elif 'damageValues' in item_info:
             if str(item_stub['damage']) in item_info['damageValues']:
                 item_info.update(item_info['damageValues'][str(item_stub['damage'])])
@@ -24,7 +26,9 @@ def normalize_item_info(item_info, item_stub, block=False):
             bottle.abort(404, 'The {} {} has no damage values.'.format('block' if block else 'item', item_stub['id']))
     elif 'effect' in item_stub:
         effect_plugin, effect_id = item_stub['effect'].split(':')
-        if 'effects' in item_info:
+        if 'tagValue' in item_stub:
+            bottle.abort(500, 'Tried to make an info page for {} with both effect and tag.'.format('a block' if block else 'an item'))
+        elif 'effects' in item_info:
             if effect_plugin in item_info['effects'] and effect_id in item_info['effects'][effect_plugin]:
                 item_info.update(item_info['effects'][effect_plugin][effect_id])
                 del item_info['effects']
@@ -32,6 +36,16 @@ def normalize_item_info(item_info, item_stub, block=False):
                 bottle.abort(404, 'The {} {} does not occur with the effect {}.'.format('block' if block else 'item', item_stub['id'], item_stub['effect']))
         else:
             bottle.abort(404, 'The {} {} has no effect values.'.format('block' if block else 'item', item_stub['id']))
+    elif 'tagValue' in item_stub:
+        if 'tagName' in item_info:
+            if str(item_stub['tagValue']) in item_info['tagVariants']:
+                item_info.update(item_info['tagVariants'][str(item_stub['tagValue'])])
+                del item_info['tagName']
+                del item_info['tagVariants']
+            else:
+                bottle.abort(404, 'The {} {} does not occur with the tag value {}.'.format('block' if 'block' else 'item', item_stub['id'], item_stub['tagValue']))
+        else:
+            bottle.abort(404, 'The {} {} has no tag variants.'.format('block' if block else 'item', item_stub['id']))
     elif 'damageValues' in item_info:
         # return damage value disambiguation page
         damage_values = sorted(int(damage) for damage in item_info['damageValues'])
@@ -54,28 +68,49 @@ def normalize_item_info(item_info, item_stub, block=False):
                 %end
             </p>
         """, effects=effects, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
+    elif 'tagName' in item_info:
+        def is_int_str(s):
+            try:
+                int(s)
+            except ValueError:
+                return False
+            return True
 
-def item_title(item_info, item_stub, block=False):
+        if all(is_int_str(tag_value) for tag_value in item_info['tagVariants']):
+            tag_values = sorted(int(tag_value) for tag_value in item_info['tagVariants'])
+        else:
+            tag_values = sorted(tag_value for tag_value in item_info['tagVariants'])
+        return bottle.template("""
+            <h2>Variants</h2>
+            <p>
+                %for tag_value in tag_values:
+                    {{!item_stub_image({'id': item_stub['id'], 'tagValue': tag_value}, block=block)}}
+                %end
+            </p>
+        """, tag_values=tag_values, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
+
+def item_title(item_info, item_stub, *, block=False, tag_path=None):
     return bottle.template("""
         %plugin, item_id = item_stub['id'].split(':', 1)
         <h1 style="font-size: 44px;">{{!item_image(item_info, style='vertical-align: baseline;', block=block)}}&thinsp;{{item_info['name']}}</h1>
         <p class="muted">
-            {{plugin}}:{{!'<a href="/{}/{}/{}">'.format('block' if block else 'item', plugin, item_id) if 'damage' in item_stub or 'effect' in item_stub else ''}}{{item_id}}{{!'</a>/{}'.format(item_stub['damage']) if 'damage' in item_stub else '</a> with {} effect'.format(item_stub['effect']) if 'effect' in item_stub else ''}}
+            {{plugin}}:{{!'<a href="/{}/{}/{}">'.format('block' if block else 'item', plugin, item_id) if 'damage' in item_stub or 'effect' in item_stub or 'tagValue' in item_stub else ''}}{{item_id}}{{!'</a>/{}'.format(item_stub['damage']) if 'damage' in item_stub else '</a> with {} effect'.format(item_stub['effect']) if 'effect' in item_stub else '</a> with tag {} set to {}'.format(tag_path[-1], item_stub['tagValue']) if 'tagValue' in item_stub else ''}}
         </p>
-    """, item_image=ati.item_image, item_info=item_info, item_stub=item_stub, block=block)
+    """, item_image=ati.item_image, item_info=item_info, item_stub=item_stub, block=block, tag_path=tag_path)
 
 def item_page(item_stub, block=False):
     if isinstance(item_stub, str):
         item_stub = {'id': item_stub}
     item_info = api.api_item_by_id(item_stub['id'])
+    tag_path=item_info.get('tagPath')
     disambig = normalize_item_info(item_info, item_stub, block=block)
     yield ati.header(title=item_info.get('name', item_stub['id']))
     if disambig:
-        yield item_title(item_info, item_stub, block=block)
+        yield item_title(item_info, item_stub, block=block, tag_path=tag_path)
         yield disambig
         yield ati.footer()
         return
-    yield item_title(item_info, item_stub, block=block)
+    yield item_title(item_info, item_stub, block=block, tag_path=tag_path)
     def body():
         # tab bar
         yield """
