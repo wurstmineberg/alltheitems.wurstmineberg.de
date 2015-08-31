@@ -179,11 +179,11 @@ def item_page(item_stub, block=False):
                             <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#setblock">setblock</a> &lt;x&gt; &lt;y&gt; &lt;x&gt; {{item_stub['id']}}{{' {}'.format(item_stub['damage']) if 'damage' in item_stub else ''}}</code>.</p>
                         %end
                     %else:
-                        <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '<amount> 0 {' + ': {'.join(json.dumps(tag_path_elt) for tag_path_elt in tag_path) + ': ' json.dumps(int(item_stub['tagValue']) if tag_values_are_ints else item_stub['tagValue']) + '}' * len(tag_path) if 'tagValue' in item_stub else '[amount]'}}</code>.</p>
+                        <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '<amount> 0 {' + ': {'.join(json.dumps(tag_path_elt) for tag_path_elt in tag_path) + ': ' + json.dumps(int(item_stub['tagValue']) if tag_values_are_ints else item_stub['tagValue']) + '}' * len(tag_path) if 'tagValue' in item_stub else '[amount]'}}</code>.</p>
                     %end
                 %end
             </div>
-        """, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_inte=tag_values_are_ints)
+        """, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
         #TODO usage
         yield bottle.template("""
             <div id="usage" class="section hidden">
