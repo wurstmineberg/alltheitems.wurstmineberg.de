@@ -369,7 +369,7 @@ def show_item_by_effect(plugin, item_id, effect_plugin, effect_id):
         'id': plugin + ':' + item_id
     })
 
-@application.route('/item/<plugin>/<block_id>/tag/<tag_value>')
+@application.route('/item/<plugin>/<item_id>/tag/<tag_value>')
 def show_item_by_tag(plugin, item_id, tag_value):
     """A page with detailed information about the item with the given ID and tag variant."""
     import alltheitems.item_page
