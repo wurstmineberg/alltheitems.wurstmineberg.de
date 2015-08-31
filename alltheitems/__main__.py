@@ -145,12 +145,10 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
         ret = '<img src="http://assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=host)
     if tooltip:
         ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
+    plugin, string_id = item_info['stringID'].split(':', 1)
     if link is False:
         return ret
     elif link is None or isinstance(link, int):
-        string_id = item_info['stringID'].split(':')
-        plugin = string_id[0]
-        string_id = ':'.join(string_id[1:])
         if link is None:
             # base item
             return '<a href="/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, ret)
@@ -160,17 +158,12 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
     elif isinstance(link, dict):
         if 'tagValue' in link:
             # tag variant
-            return '<a href="/{}/{}/{}/tag/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link['tagValue'])
+            return '<a href="/{}/{}/{}/tag/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link['tagValue'], ret)
         else:
             raise ValueError('Invalid link field')
     elif isinstance(link, str) and re.match('[0-9a-z_]+:[0-9a-z_]+', link):
         # effect
-        string_id = item_info['stringID'].split(':')
-        plugin = string_id[0]
-        string_id = ':'.join(string_id[1:])
-        effect_id = link.split(':')
-        effect_plugin = effect_id[0]
-        effect_id = ':'.join(effect_id[1:])
+        effect_plugin, effect_id = link.split(':', 1)
         return '<a href="/{}/{}/{}/effect/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, effect_plugin, effect_id, ret)
     else:
         return '<a href="{}">{}</a>'.format(link, ret)
