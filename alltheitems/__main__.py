@@ -82,7 +82,7 @@ def header(*, title='All The Items'):
                         <li class="dropdown active">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true"><i class="fa fa-ellipsis-h"></i> More<b class="caret"></b></a>
                             <ul class="dropdown-menu">
-                                <li><a href="http://alltheitems.{{host}}/">All The Items</a></li>
+                                <li><a href="/">All The Items</a></li>
                             </ul>
                         </li>
                     </ul>
