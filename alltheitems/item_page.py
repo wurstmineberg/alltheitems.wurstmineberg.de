@@ -2,6 +2,13 @@ import alltheitems.__main__ as ati
 import api
 import bottle
 
+def is_int_str(s):
+    try:
+        int(s)
+    except ValueError:
+        return False
+    return True
+
 def normalize_item_info(item_info, item_stub, block=False):
     if block and 'blockID' not in item_info:
         bottle.abort(404, 'There is no block with the ID {}. There is however an item with that ID.'.format(item_stub['id']))
@@ -69,14 +76,7 @@ def normalize_item_info(item_info, item_stub, block=False):
             </p>
         """, effects=effects, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
     elif 'tagPath' in item_info:
-        def is_int_str(s):
-            try:
-                int(s)
-            except ValueError:
-                return False
-            return True
-
-        if all(is_int_str(tag_value) for tag_value in item_info['tagVariants']):
+        if tag_values_are_ints:
             tag_values = sorted(int(tag_value) for tag_value in item_info['tagVariants'])
         else:
             tag_values = sorted(tag_value for tag_value in item_info['tagVariants'])
@@ -103,14 +103,15 @@ def item_page(item_stub, block=False):
         item_stub = {'id': item_stub}
     item_info = api.api_item_by_id(item_stub['id'])
     tag_path=item_info.get('tagPath')
+    tag_values_are_ints = all(is_int_str(tag_value) for tag_value in item_info['tagVariants'])
     disambig = normalize_item_info(item_info, item_stub, block=block)
     yield ati.header(title=item_info.get('name', item_stub['id']))
     if disambig:
-        yield item_title(item_info, item_stub, block=block, tag_path=tag_path)
+        yield item_title(item_info, item_stub, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
         yield disambig
         yield ati.footer()
         return
-    yield item_title(item_info, item_stub, block=block, tag_path=tag_path)
+    yield item_title(item_info, item_stub, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
     def body():
         # tab bar
         yield """
@@ -172,15 +173,17 @@ def item_page(item_stub, block=False):
                     %if block:
                         %if 'effect' in item_stub:
                             <p>No known method exists for obtaining blocks with effect data.
+                        %elif 'tagValue' in item_stub:
+                            <p>No known method exists for obtaining tag variants of blocks.
                         %else:
                             <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#setblock">setblock</a> &lt;x&gt; &lt;y&gt; &lt;x&gt; {{item_stub['id']}}{{' {}'.format(item_stub['damage']) if 'damage' in item_stub else ''}}</code>.</p>
                         %end
                     %else:
-                        <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '[amount]'}}</code>.</p>
+                        <p>{{item_info['name']}} is unobtainable in Survival. You can obtain it in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '<amount> 0 {' + ': {'.join(json.dumps(tag_path_elt) for tag_path_elt in tag_path) + ': ' json.dumps(int(item_stub['tagValue']) if tag_values_are_ints else item_stub['tagValue']) + '}' * len(tag_path) if 'tagValue' in item_stub else '[amount]'}}</code>.</p>
                     %end
                 %end
             </div>
-        """, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block)
+        """, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_inte=tag_values_are_ints)
         #TODO usage
         yield bottle.template("""
             <div id="usage" class="section hidden">
