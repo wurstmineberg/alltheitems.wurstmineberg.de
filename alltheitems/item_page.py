@@ -94,7 +94,7 @@ def item_title(item_info, item_stub, *, block=False, tag_path=None):
         %plugin, item_id = item_stub['id'].split(':', 1)
         <h1 style="font-size: 44px;">{{!item_image(item_info, style='vertical-align: baseline;', block=block)}}&thinsp;{{item_info['name']}}</h1>
         <p class="muted">
-            {{plugin}}:{{!'<a href="/{}/{}/{}">'.format('block' if block else 'item', plugin, item_id) if 'damage' in item_stub or 'effect' in item_stub or 'tagValue' in item_stub else ''}}{{item_id}}{{!'</a>/{}'.format(item_stub['damage']) if 'damage' in item_stub else '</a> with {} effect'.format(item_stub['effect']) if 'effect' in item_stub else '</a> with tag {} set to {}'.format(tag_path[-1], item_stub['tagValue']) if 'tagValue' in item_stub else ''}}
+            {{plugin}}:{{!'<a href="/{}/{}/{}">'.format('block' if block else 'item', plugin, item_id) if 'damage' in item_stub or 'effect' in item_stub or 'tagValue' in item_stub else ''}}{{item_id}}{{!'</a>/{}'.format(item_stub['damage']) if 'damage' in item_stub else '</a> with {} effect'.format(item_stub['effect']) if 'effect' in item_stub else '</a> with tag {} set to {}'.format('.'.join(tag_path), item_stub['tagValue']) if 'tagValue' in item_stub else ''}}
         </p>
     """, item_image=ati.item_image, item_info=item_info, item_stub=item_stub, block=block, tag_path=tag_path)
 
