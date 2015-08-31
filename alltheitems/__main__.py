@@ -61,20 +61,40 @@ def header(*, title='All The Items'):
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="/">All The Items</a>""", title=title, host=host) + ("""
-                    <span style="color: red; left: 100; position: absolute; top: 30; transform: rotate(-10deg) scale(2); z-index: 10;">[DEV]</span>
-                    """ if is_dev else '') + """
+                    <a class="navbar-brand" href="http://{{host}}/">Wurstmineberg</a>
                 </div>
-                <!-- insert search bar here
-                    <div class="collapse navbar-collapse navbar-ex1-collapse">
-                        <div class="navbar-right funding-progress-container">
+                <div class="collapse navbar-collapse navbar-ex1-collapse">
+                    <ul id="navbar-list" class="nav navbar-nav">
+                        <li><a href="http://{{host}}/"><i class="fa fa-home"></i> Home</a></li>
+                        <li><a href="http://{{host}}/about"><i class="fa fa-info-circle"></i> About</a></li>
+                        <li><a href="http://{{host}}/people"><i class="fa fa-users"></i> People</a></li>
+                        <li><a href="http://{{host}}/stats"><i class="fa fa-table"></i> Statistics</a></li>
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true"><i class="fa fa-book"></i> Wiki<b class="caret"></b></a>
+                            <ul class="dropdown-menu p-navigation" id="p-navigation">
+                                <li id="n-mainpage-description"><a href="//wiki.{{host}}/" title="Visit the main page [ctrl-alt-z]" accesskey="z">Main page</a></li>
+                                <li id="n-currentevents"><a href="//wiki.{{host}}/Wurstmineberg_Wiki:Current_events" title="Find background information on current events">Current events</a></li>
+                                <li id="n-recentchanges"><a href="//wiki.{{host}}/Special:RecentChanges" title="A list of recent changes in the wiki [ctrl-alt-r]" accesskey="r">Recent changes</a></li>
+                                <li id="n-randompage"><a href="//wiki.{{host}}/Special:Random" title="Load a random page [ctrl-alt-x]" accesskey="x">Random page</a></li>
+                                <li id="n-help"><a href="https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Contents" title="The place to find out">Help</a></li>
+                            </ul>
+                        </li>
+                        <li class="dropdown active">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true"><i class="fa fa-ellipsis-h"></i> More<b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="//alltheitems.{{host}}/">All The Items</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <!-- insert search bar here
+                        <div class="navbar-right ati-search-bar">
                             <p class="navbar-text">Search:</p>
                         </div>
-                    </div>
-                -->
+                    -->
+                </div>
             </nav>
             <div class="container" style="text-align: center;">
-    """
+    """, title=title, host=host)
 
 def footer(*, linkify_headers=False, additional_js=''):
     return """
@@ -82,18 +102,26 @@ def footer(*, linkify_headers=False, additional_js=''):
             <hr />
             <p class="muted text-center">The People of wurstmineberg.de 2012–2015</p>
             <script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
-            <script src="http://assets.wurstmineberg.de/js/underscore-min.js"></script>
+            <script src="http://assets.{host}/js/underscore-min.js"></script>
             <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
             <script src="//jquerymy.com/js/md5.js"></script>
             <script src="http://assets.{host}/js/common.js"></script>
             <script type="text/javascript">
                 // run by default
     """.format(host=host) + ('linkify_headers();' if linkify_headers else '') + """
-                //configure_navigation();
                 set_anchor_height();
                 $(".use-tooltip").tooltip();
                 $("abbr").tooltip();
-    """ + additional_js + """
+    """ + ("""
+                $('.navbar-brand').after($('<span>').css({
+                    color: 'red',
+                    left: 100,
+                    position: 'absolute',
+                    top: 30,
+                    transform: 'rotate(-10deg) scale(2)',
+                    'z-index': 10
+                }).text('[DEV]'));
+    """ if is_dev else '') + additional_js + """
             </script>
         </body>
     </html>
