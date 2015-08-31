@@ -103,7 +103,7 @@ def item_page(item_stub, block=False):
         item_stub = {'id': item_stub}
     item_info = api.api_item_by_id(item_stub['id'])
     tag_path=item_info.get('tagPath')
-    tag_values_are_ints = all(is_int_str(tag_value) for tag_value in item_info['tagVariants'])
+    tag_values_are_ints = all(is_int_str(tag_value) for tag_value in item_info.get('tagVariants', []))
     disambig = normalize_item_info(item_info, item_stub, block=block, tag_values_are_ints=tag_values_are_ints)
     yield ati.header(title=item_info.get('name', item_stub['id']))
     if disambig:
