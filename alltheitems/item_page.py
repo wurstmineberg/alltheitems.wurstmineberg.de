@@ -37,10 +37,10 @@ def normalize_item_info(item_info, item_stub, block=False):
         else:
             bottle.abort(404, 'The {} {} has no effect values.'.format('block' if block else 'item', item_stub['id']))
     elif 'tagValue' in item_stub:
-        if 'tagName' in item_info:
+        if 'tagPath' in item_info:
             if str(item_stub['tagValue']) in item_info['tagVariants']:
                 item_info.update(item_info['tagVariants'][str(item_stub['tagValue'])])
-                del item_info['tagName']
+                del item_info['tagPath']
                 del item_info['tagVariants']
             else:
                 bottle.abort(404, 'The {} {} does not occur with the tag value {}.'.format('block' if 'block' else 'item', item_stub['id'], item_stub['tagValue']))
@@ -68,7 +68,7 @@ def normalize_item_info(item_info, item_stub, block=False):
                 %end
             </p>
         """, effects=effects, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
-    elif 'tagName' in item_info:
+    elif 'tagPath' in item_info:
         def is_int_str(s):
             try:
                 int(s)
