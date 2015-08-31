@@ -9,7 +9,7 @@ def is_int_str(s):
         return False
     return True
 
-def normalize_item_info(item_info, item_stub, block=False):
+def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_ints=False):
     if block and 'blockID' not in item_info:
         bottle.abort(404, 'There is no block with the ID {}. There is however an item with that ID.'.format(item_stub['id']))
     if not block and 'itemID' not in item_info:
@@ -104,14 +104,14 @@ def item_page(item_stub, block=False):
     item_info = api.api_item_by_id(item_stub['id'])
     tag_path=item_info.get('tagPath')
     tag_values_are_ints = all(is_int_str(tag_value) for tag_value in item_info['tagVariants'])
-    disambig = normalize_item_info(item_info, item_stub, block=block)
+    disambig = normalize_item_info(item_info, item_stub, block=block, tag_values_are_ints=tag_values_are_ints)
     yield ati.header(title=item_info.get('name', item_stub['id']))
     if disambig:
-        yield item_title(item_info, item_stub, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
+        yield item_title(item_info, item_stub, block=block, tag_path=tag_path)
         yield disambig
         yield ati.footer()
         return
-    yield item_title(item_info, item_stub, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
+    yield item_title(item_info, item_stub, block=block, tag_path=tag_path)
     def body():
         # tab bar
         yield """
