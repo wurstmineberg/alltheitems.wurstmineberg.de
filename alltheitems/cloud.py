@@ -1,5 +1,4 @@
 import alltheitems.__main__ as ati
-import api
 import bottle
 import json
 import pathlib

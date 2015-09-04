@@ -28,13 +28,13 @@ if is_dev:
     document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev')
     host = 'dev.wurstmineberg.de'
     sys.path.insert(1, '/opt/git/github.com/wurstmineberg/api.wurstmineberg.de/branch/dev')
-    import api
-    api.CONFIG_PATH = '/opt/wurstmineberg/config/devapi.json'
+    import api.v2
+    api.v2.CONFIG_PATH = '/opt/wurstmineberg/config/devapi.json'
 else:
     assets_root = pathlib.Path('/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master')
     document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master')
     host = 'wurstmineberg.de'
-    import api
+    import api.v2
 
 def header(*, title='All The Items'):
     if is_dev:
@@ -171,7 +171,7 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
 def item_info_from_stub(item_stub, block=False):
     if isinstance(item_stub, str):
         item_stub = {'id': item_stub}
-    item_info = api.api_item_by_id(item_stub['id'])
+    item_info = api.v2.api_item_by_id(*item_stub['id'].split(':', 1))
     if block and 'blockID' not in item_info:
         raise ValueError('There is no block with the ID {}. There is however an item with that ID.'.format(item_stub['id']))
     if not block and 'itemID' not in item_info:
