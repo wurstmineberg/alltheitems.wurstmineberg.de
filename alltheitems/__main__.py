@@ -28,8 +28,10 @@ if is_dev:
     document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev')
     host = 'dev.wurstmineberg.de'
     sys.path.insert(1, '/opt/git/github.com/wurstmineberg/api.wurstmineberg.de/branch/dev')
+    import api.util
+    api.util.CONFIG_PATH = '/opt/wurstmineberg/config/devapi.json'
+    api.util.CONFIG = api.util.config()
     import api.v2
-    api.v2.CONFIG_PATH = '/opt/wurstmineberg/config/devapi.json'
 else:
     assets_root = pathlib.Path('/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master')
     document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master')
@@ -176,10 +178,6 @@ def item_info_from_stub(item_stub, block=False):
         raise ValueError('There is no block with the ID {}. There is however an item with that ID.'.format(item_stub['id']))
     if not block and 'itemID' not in item_info:
         raise ValueError('There is no item with the ID {}. There is however a block with that ID.'.format(item_stub['id']))
-    if 'blockInfo' in item_info:
-        if block:
-            item_info.update(item_info['blockInfo'])
-        del item_info['blockInfo']
     if 'damage' in item_stub:
         if 'effect' in item_stub:
             raise ValueError('Tried to make an info page for {} with both damage and effect.'.format('a block' if block else 'an item'))
@@ -221,6 +219,8 @@ def item_info_from_stub(item_stub, block=False):
                     del item_info['tagVariants']
                 else:
                     raise ValueError('The {} {} does not occur with the tag variant {}.'.format('block' if block else 'item', item_stub['id'], item_stub['tagValue']))
+        else:
+            raise ValueError('The {} {} has no tag variants.'.format('block' if block else 'item', item_stub['id']))
     elif 'damageValues' in item_info:
         raise ValueError('Must specify damage')
     elif 'effects' in item_info:
