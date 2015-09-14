@@ -29,7 +29,7 @@ if is_dev:
     host = 'dev.wurstmineberg.de'
     sys.path.insert(1, '/opt/git/github.com/wurstmineberg/api.wurstmineberg.de/branch/dev')
     import api.util
-    api.util.CONFIG_PATH = '/opt/wurstmineberg/config/devapi.json'
+    api.util.CONFIG_PATH = pathlib.Path('/opt/wurstmineberg/config/devapi.json')
     api.util.CONFIG = api.util.config()
     import api.v2
 else:
