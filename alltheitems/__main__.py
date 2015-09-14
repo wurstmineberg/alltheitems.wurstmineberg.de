@@ -158,7 +158,7 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
     elif isinstance(link, dict):
         if 'tagValue' in link:
             # tag variant
-            return '<a href="/{}/{}/{}/tag/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link['tagValue'], ret)
+            return '<a href="/{}/{}/{}/tag/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, 'null' if link['tagValue'] is None else link['tagValue'], ret)
         else:
             raise ValueError('Invalid link field')
     elif isinstance(link, str) and re.match('[0-9a-z_]+:[0-9a-z_]+', link):
@@ -207,12 +207,20 @@ def item_info_from_stub(item_stub, block=False):
             raise ValueError('The {} {} has no effect values.'.format('block' if block else 'item', item_stub['id']))
     elif 'tagValue' in item_stub:
         if 'tagPath' in item_info:
-            if str(item_stub['tagValue']) in item_info['tagVariants']:
-                item_info.update(item_info['tagVariants'][str(item_stub['tagValue'])])
-                del item_info['tagPath']
-                del item_info['tagVariants']
+            if item_stub['tagValue'] is None:
+                if '' in item_info['tagVariants']:
+                    item_info.update(item_info['tagVariants'][''])
+                    del item_info['tagPath']
+                    del item_info['tagVariants']
+                else:
+                    raise ValueError('The {} {} does not occur with the empty tag variant.'.format('block' if block else 'item', item_stub['id']))
             else:
-                raise ValueError('The {} {} does not occur with the tag variant {}.'.format('block' if block else 'item', item_stub['id'], item_stub['tagValue']))
+                if str(item_stub['tagValue']) in item_info['tagVariants']:
+                    item_info.update(item_info['tagVariants'][str(item_stub['tagValue'])])
+                    del item_info['tagPath']
+                    del item_info['tagVariants']
+                else:
+                    raise ValueError('The {} {} does not occur with the tag variant {}.'.format('block' if block else 'item', item_stub['id'], item_stub['tagValue']))
     elif 'damageValues' in item_info:
         raise ValueError('Must specify damage')
     elif 'effects' in item_info:
@@ -342,7 +350,7 @@ def show_block_by_tag(plugin, block_id, tag_value):
     import alltheitems.item_page
     return alltheitems.item_page.item_page({
         'id': plugin + ':' + block_id,
-        'tagValue': tag_value
+        'tagValue': None if tag_value == 'null' else tag_value
     }, block=True)
 
 @application.route('/item/<plugin>/<item_id>')
@@ -375,7 +383,7 @@ def show_item_by_tag(plugin, item_id, tag_value):
     import alltheitems.item_page
     return alltheitems.item_page.item_page({
         'id': plugin + ':' + item_id,
-        'tagValue': tag_value
+        'tagValue': None if tag_value == 'null' else tag_value
     })
 
 if __name__ == '__main__':

@@ -45,12 +45,20 @@ def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_int
             bottle.abort(404, 'The {} {} has no effect values.'.format('block' if block else 'item', item_stub['id']))
     elif 'tagValue' in item_stub:
         if 'tagPath' in item_info:
-            if str(item_stub['tagValue']) in item_info['tagVariants']:
-                item_info.update(item_info['tagVariants'][str(item_stub['tagValue'])])
-                del item_info['tagPath']
-                del item_info['tagVariants']
+            if item_stub['tagValue'] is None:
+                if '' in item_info['tagVariants']:
+                    item_info.update(item_info['tagVariants'][''])
+                    del item_info['tagPath']
+                    del item_info['tagVariants']
+                else:
+                    bottle.abort(404, 'The {} {} does not occur with the empty tag value.'.format('block' if 'block' else 'item', item_stub['id']))
             else:
-                bottle.abort(404, 'The {} {} does not occur with the tag value {}.'.format('block' if 'block' else 'item', item_stub['id'], item_stub['tagValue']))
+                if str(item_stub['tagValue']) in item_info['tagVariants']:
+                    item_info.update(item_info['tagVariants'][str(item_stub['tagValue'])])
+                    del item_info['tagPath']
+                    del item_info['tagVariants']
+                else:
+                    bottle.abort(404, 'The {} {} does not occur with the tag value {}.'.format('block' if 'block' else 'item', item_stub['id'], item_stub['tagValue']))
         else:
             bottle.abort(404, 'The {} {} has no tag variants.'.format('block' if block else 'item', item_stub['id']))
     elif 'damageValues' in item_info:
@@ -77,9 +85,9 @@ def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_int
         """, effects=effects, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
     elif 'tagPath' in item_info:
         if tag_values_are_ints:
-            tag_values = sorted(int(tag_value) for tag_value in item_info['tagVariants'])
+            tag_values = sorted((None if tag_value == '' else int(tag_value)) for tag_value in item_info['tagVariants'])
         else:
-            tag_values = sorted(tag_value for tag_value in item_info['tagVariants'])
+            tag_values = sorted((None if tag_value == '' else tag_value) for tag_value in item_info['tagVariants'])
         return bottle.template("""
             <h2>Variants</h2>
             <p>
@@ -94,7 +102,7 @@ def item_title(item_info, item_stub, *, block=False, tag_path=None):
         %plugin, item_id = item_stub['id'].split(':', 1)
         <h1 style="font-size: 44px;">{{!item_image(item_info, style='vertical-align: baseline;', block=block)}}&thinsp;{{item_info['name']}}</h1>
         <p class="muted">
-            {{plugin}}:{{!'<a href="/{}/{}/{}">'.format('block' if block else 'item', plugin, item_id) if 'damage' in item_stub or 'effect' in item_stub or 'tagValue' in item_stub else ''}}{{item_id}}{{!'</a>/{}'.format(item_stub['damage']) if 'damage' in item_stub else '</a> with {} effect'.format(item_stub['effect']) if 'effect' in item_stub else '</a> with tag {} set to {}'.format('.'.join(tag_path), item_stub['tagValue']) if 'tagValue' in item_stub else ''}}
+            {{plugin}}:{{!'<a href="/{}/{}/{}">'.format('block' if block else 'item', plugin, item_id) if 'damage' in item_stub or 'effect' in item_stub or 'tagValue' in item_stub else ''}}{{item_id}}{{!'</a>/{}'.format(item_stub['damage']) if 'damage' in item_stub else '</a> with {} effect'.format(item_stub['effect']) if 'effect' in item_stub else ('</a> with tag {} not set'.format('.'.join(tag_path)) if item_stub['tagValue'] is None else '</a> with tag {} set to {}'.format('.'.join(tag_path), item_stub['tagValue'])) if 'tagValue' in item_stub else ''}}
         </p>
     """, item_image=ati.item_image, item_info=item_info, item_stub=item_stub, block=block, tag_path=tag_path)
 
@@ -103,7 +111,7 @@ def item_page(item_stub, block=False):
         item_stub = {'id': item_stub}
     item_info = api.v2.api_item_by_id(*item_stub['id'].split(':', 1))
     tag_path=item_info.get('tagPath')
-    tag_values_are_ints = all(is_int_str(tag_value) for tag_value in item_info.get('tagVariants', []))
+    tag_values_are_ints = all(tag_value == '' or is_int_str(tag_value) for tag_value in item_info.get('tagVariants', []))
     disambig = normalize_item_info(item_info, item_stub, block=block, tag_values_are_ints=tag_values_are_ints)
     yield ati.header(title=item_info.get('name', item_stub['id']))
     if disambig:
@@ -191,7 +199,7 @@ def item_page(item_stub, block=False):
                         %if i == 0:
                             {{item_info['name']}} is unobtainable in Survival.
                         %end
-                        You can {{'obtain it' if i == 0 else 'also obtain ' + item_info['name']}} in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '<amount> 0 {' + ': {'.join(json.dumps(tag_path_elt) for tag_path_elt in tag_path) + ': ' + json.dumps(int(item_stub['tagValue']) if tag_values_are_ints else item_stub['tagValue']) + '}' * len(tag_path) if 'tagValue' in item_stub else '[amount]'}}</code>.
+                        You can {{'obtain it' if i == 0 else 'also obtain ' + item_info['name']}} in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '<amount> 0 {' + ': {'.join(json.dumps(tag_path_elt) for tag_path_elt in tag_path) + ': ' + json.dumps(int(item_stub['tagValue']) if tag_values_are_ints else item_stub['tagValue']) + '}' * len(tag_path) if item_stub.get('tagValue') is not None else '[amount]'}}</code>.
                     </p>
                 %end
             </div>
