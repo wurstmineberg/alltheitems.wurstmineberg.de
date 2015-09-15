@@ -104,16 +104,15 @@ def footer(*, linkify_headers=False, additional_js=''):
             <hr />
             <p class="muted text-center">The People of wurstmineberg.de 2012–2015</p>
             <script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
-            <script src="http://assets.{host}/js/underscore-min.js"></script>
+            <script src="http://underscorejs.org/underscore-min.js"></script>
             <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
             <script src="//jquerymy.com/js/md5.js"></script>
             <script src="http://assets.{host}/js/common.js"></script>
             <script type="text/javascript">
                 // run by default
-    """.format(host=host) + ('linkify_headers();' if linkify_headers else '') + """
-                set_anchor_height();
-                $(".use-tooltip").tooltip();
-                $("abbr").tooltip();
+    """.format(host=host) + ('linkifyHeaders();' if linkify_headers else '') + """
+                setAnchorHeight();
+                initializeTooltips();
     """ + ("""
                 $('.navbar-brand').after($('<span>').css({
                     color: 'red',
