@@ -85,9 +85,9 @@ def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_int
         """, effects=effects, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
     elif 'tagPath' in item_info:
         if tag_values_are_ints:
-            tag_values = sorted((None if tag_value == '' else int(tag_value)) for tag_value in item_info['tagVariants'])
+            tag_values = sorted(((None if tag_value == '' else int(tag_value)) for tag_value in item_info['tagVariants']), key=lambda tag_value: -1 if tag_value is None else tag_value)
         else:
-            tag_values = sorted((None if tag_value == '' else tag_value) for tag_value in item_info['tagVariants'])
+            tag_values = sorted(((None if tag_value == '' else tag_value) for tag_value in item_info['tagVariants']), key=lambda tag_value: '' if tag_value is None else tag_value)
         return bottle.template("""
             <h2>Variants</h2>
             <p>
