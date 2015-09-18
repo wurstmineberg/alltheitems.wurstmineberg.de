@@ -128,7 +128,7 @@ def footer(*, linkify_headers=False, additional_js=''):
     </html>
     """
 
-def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
+def item_image(plugin, string_id, item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
     if classes is None:
         classes = []
     if block and 'blockInfo' in item_info:
@@ -141,12 +141,11 @@ def item_image(item_info, *, classes=None, tint=None, style='width: 32px;', bloc
         elif tint is None:
             ret = '<img src="http://assets.{host}/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style, host=host)
         else:
-            ret = '<img style="background: url(http://api.{host}/minecraft/items/render/dyed-by-id/{}/{:06x}/png.png)" src="http://assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(item_info['stringID'], tint, item_info['image'], ' '.join(classes), style, host=host)
+            ret = '<img style="background: url(http://api.{host}/v2/minecraft/items/render/dyed-by-id/{}/{}/{:06x}.png)" src="http://assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(plugin, item_id, tint, item_info['image'], ' '.join(classes), style, host=host)
     else:
         ret = '<img src="http://assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=host)
     if tooltip:
         ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
-    plugin, string_id = item_info['stringID'].split(':', 1)
     if link is False:
         return ret
     elif link is None or isinstance(link, int):
@@ -229,6 +228,8 @@ def item_info_from_stub(item_stub, block=False):
     return item_info
 
 def item_stub_image(item_stub, *, block=False, link=True, tooltip=True):
+    if isinstance(item_stub, str):
+        item_stub = {'id': item_stub}
     if link is True:
         # derive link from item stub
         if 'damage' in item_stub:
@@ -239,7 +240,7 @@ def item_stub_image(item_stub, *, block=False, link=True, tooltip=True):
             link = {'tagValue': item_stub['tagValue']}
         else:
             link = None # base item
-    return item_image(item_info_from_stub(item_stub, block=block), block=block, link=link, tooltip=tooltip)
+    return item_image(item_stub['id'].split(':', 1)[0], item_stub['id'].split(':', 1)[1], item_info_from_stub(item_stub, block=block), block=block, link=link, tooltip=tooltip)
 
 def ordinal(number):
     decimal = str(number)

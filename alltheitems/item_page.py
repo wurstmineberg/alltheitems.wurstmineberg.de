@@ -100,7 +100,7 @@ def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_int
 def item_title(item_info, item_stub, *, block=False, tag_path=None):
     return bottle.template("""
         %plugin, item_id = item_stub['id'].split(':', 1)
-        <h1 style="font-size: 44px;">{{!item_image(item_info, style='vertical-align: baseline;', block=block)}}&thinsp;{{item_info['name']}}</h1>
+        <h1 style="font-size: 44px;">{{!item_image(plugin, item_id, item_info, style='vertical-align: baseline;', block=block)}}&thinsp;{{item_info['name']}}</h1>
         <p class="muted">
             {{plugin}}:{{!'<a href="/{}/{}/{}">'.format('block' if block else 'item', plugin, item_id) if 'damage' in item_stub or 'effect' in item_stub or 'tagValue' in item_stub else ''}}{{item_id}}{{!'</a>/{}'.format(item_stub['damage']) if 'damage' in item_stub else '</a> with {} effect'.format(item_stub['effect']) if 'effect' in item_stub else ('</a> with tag {} not set'.format('.'.join(tag_path)) if item_stub['tagValue'] is None else '</a> with tag {} set to {}'.format('.'.join(tag_path), item_stub['tagValue'])) if 'tagValue' in item_stub else ''}}
         </p>
