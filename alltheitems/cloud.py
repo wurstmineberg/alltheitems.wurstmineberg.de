@@ -279,7 +279,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # hopper facing south
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        if block['damage'] != 3: # south
+                        if block['damage'] & 0x7 != 3: # south
                             return 'red', 'Hopper at {} {} {} should be pointing south, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == '>':
@@ -290,7 +290,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         else:
                             if block['id'] != 'minecraft:hopper':
                                 return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                            if block['damage'] != 2: # north
+                            if block['damage'] & 0x7 != 2: # north
                                 return 'red', 'Hopper at {} {} {} should be pointing north, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                             pass #TODO check contents
                     elif block_symbol == '?':
@@ -353,7 +353,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # hopper facing outward
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        if block['damage'] != (5 if z % 2 == 0 else 4): # east / west
+                        if block['damage'] & 0x7 != (5 if z % 2 == 0 else 4): # east / west
                             return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'east' if z % 2 == 0 else 'west', HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == 'c':
@@ -408,14 +408,14 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # hopper facing inwards
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        if block['damage'] != (4 if z % 2 == 0 else 5): # west / east
+                        if block['damage'] & 0x7 != (4 if z % 2 == 0 else 5): # west / east
                             return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'west' if z % 2 == 0 else 'east', HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == 'x':
                         # hopper facing down
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        if block['damage'] != 0: # down
+                        if block['damage'] & 0x7 != 0: # down
                             return 'red', 'Hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == '~':
