@@ -41,8 +41,8 @@ def chest_iter():
                 yield x, corridor, y, floor, z, chest
 
 def chest_coords(item):
-    if not isinstance(item_stub, alltheitems.item.Item):
-        item_stub = alltheitems.item.Item(item)
+    if not isinstance(item, alltheitems.item.Item):
+        item = alltheitems.item.Item(item)
     for x, _, y, _, z, chest in chest_iter():
         if item == chest:
             return x, y, z
