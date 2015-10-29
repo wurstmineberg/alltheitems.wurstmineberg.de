@@ -40,10 +40,12 @@ def chest_iter():
             for z, chest in enumerate(corridor):
                 yield x, corridor, y, floor, z, chest
 
-def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root):
+def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
+    if chunk_cache is None:
+        chunk_cache = {}
     if isinstance(item_stub, str):
         item_stub = {'id': item_stub}
     if 'name' in item_stub:
@@ -65,8 +67,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
     base_z = 28 + 10 * y + 4 * (z // 2)
     # does the access chest exist?
     exists = False
-    north_half = block_at(base_x, base_y, base_z)
-    south_half = block_at(base_x, base_y, base_z + 1)
+    north_half = block_at(base_x, base_y, base_z, chunk_cache=chunk_cache)
+    south_half = block_at(base_x, base_y, base_z + 1, chunk_cache=chunk_cache)
     if north_half['id'] != 'minecraft:chest' and south_half['id'] != 'minecraft:chest':
         state = 'gray', 'Access chest does not exist'
     elif north_half['id'] != 'minecraft:chest':
@@ -79,7 +81,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
     has_smart_chest = False
     missing_droppers = set()
     for dropper_y in range(base_y - 7, base_y):
-        dropper = block_at(base_x, dropper_y, base_z)
+        dropper = block_at(base_x, dropper_y, base_z, chunk_cache=chunk_cache)
         if dropper['id'] != 'minecraft:dropper':
             missing_droppers.add(dropper_y)
     if len(missing_droppers) == 7:
@@ -99,7 +101,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
         state = 'cyan', state[1]
     # does it have a sorter?
     has_sorter = False
-    sorting_hopper = block_at(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z)
+    sorting_hopper = block_at(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, chunk_cache=chunk_cache)
     if sorting_hopper['id'] != 'minecraft:hopper':
         if state[0] is None:
             state = 'yellow', 'Sorting hopper does not exist'
@@ -115,7 +117,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
     has_overflow = False
     missing_overflow_hoppers = set()
     for overflow_x in range(base_x + 3 if z % 2 == 0 else base_x - 3, base_x + 5 if z % 2 == 0 else base_x - 5):
-        overflow_hopper = block_at(overflow_x, base_y - 7, base_z - 1)
+        overflow_hopper = block_at(overflow_x, base_y - 7, base_z - 1, chunk_cache=chunk_cache)
         if overflow_hopper['id'] != 'minecraft:hopper':
             missing_overflow_hoppers.add(overflow_x)
     if len(missing_overflow_hoppers) == 0:
@@ -140,7 +142,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
             if not item.matches_slot(slot):
                 return 'red', 'Access chest contains items of the wrong kind'
         # error check: wrong name on sign
-        sign = block_at(base_x - 1 if z % 2 == 0 else base_x + 1, base_y + 1, base_z + 1)
+        sign = block_at(base_x - 1 if z % 2 == 0 else base_x + 1, base_y + 1, base_z + 1, chunk_cache=chunk_cache)
         if sign['id'] != 'minecraft:wall_sign':
             return 'red', 'Sign is missing'
         text = []
@@ -198,7 +200,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                     exact_y = base_y + layer_y
                     exact_z = base_z + 3 - layer_z
                     # determine current block
-                    block = block_at(exact_x, exact_y, exact_z)
+                    block = block_at(exact_x, exact_y, exact_z, chunk_cache=chunk_cache)
                     # check against schematic
                     if block_symbol == ' ':
                         # air
@@ -362,7 +364,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         return 'red', 'Not yet implemented: block at {} {} {} should be {}'.format(exact_x, exact_y, exact_z, block_symbol)
     return state
 
-def chest_background_color(coords, item_stub, *, items_data=None):
+def chest_background_color(coords, item_stub, *, items_data=None, chunk_cache=None):
     return {
         'cyan': '#0ff',
         'gray': '#777',
@@ -370,14 +372,15 @@ def chest_background_color(coords, item_stub, *, items_data=None):
         'orange': '#f70',
         'yellow': '#ff0',
         None: 'transparent'
-    }[chest_state(coords, item_stub, items_data=items_data)[0]]
+    }[chest_state(coords, item_stub, items_data=items_data, chunk_cache=chunk_cache)[0]]
 
-def image_from_chest(coords, cloud_chest):
-    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest), alltheitems.item.Item(cloud_chest).image())
+def image_from_chest(coords, cloud_chest, chunk_cache=None):
+    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, chunk_cache=chunk_cache), alltheitems.item.Item(cloud_chest).image())
 
 def index():
     yield ati.header(title='Cloud')
     def body():
+        chunk_cache = {}
         yield '<p>The <a href="http://wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="http://{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=ati.host)
         color_explanations = {
             '#f00': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
@@ -389,7 +392,7 @@ def index():
         }
         explained_colors = set()
         for x, _, y, _, z, chest in chest_iter():
-            chest_color = chest_background_color((x, y, z), chest)
+            chest_color = chest_background_color((x, y, z), chest, chunk_cache=chunk_cache)
             if chest_color not in explained_colors:
                 if chest_color != 'transparent':
                     yield color_explanations[chest_color]
@@ -441,12 +444,12 @@ def index():
                                     %end
                                     %corridor = floor[str(x)]
                                     %if len(corridor) > z_right:
-                                        {{!image((x, y, z_right), corridor[z_right])}}
+                                        {{!image((x, y, z_right), corridor[z_right], chunk_cache=chunk_cache)}}
                                     %else:
                                         <td></td>
                                     %end
                                     %if len(corridor) > z_left:
-                                        {{!image((x, y, z_left), corridor[z_left])}}
+                                        {{!image((x, y, z_left), corridor[z_left], chunk_cache=chunk_cache)}}
                                         %found = True
                                     %else:
                                         <td></td>
@@ -459,6 +462,6 @@ def index():
                         %end
                     </tbody>
                 </table>
-            """, ati=ati, image=image_from_chest, floor=floor, y=y)
+            """, ati=ati, image=image_from_chest, floor=floor, y=y, chunk_cache=chunk_cache)
     yield from ati.html_exceptions(body())
     yield ati.footer(linkify_headers=True)

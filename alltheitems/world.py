@@ -20,13 +20,16 @@ class World:
         else:
             raise TypeError('Invalid world type: {}'.format(type(world)))
 
-    def block_at(self, x, y, z, dimension=Dimension.overworld):
+    def block_at(self, x, y, z, dimension=Dimension.overworld, *, chunk_cache=None):
+        if chunk_cache is None:
+            chunk_cache = {}
         chunk_x, block_x = divmod(x, 16)
         chunk_y, block_y = divmod(y, 16)
         chunk_z, block_z = divmod(z, 16)
-        chunk = {
-            Dimension.overworld: api.v2.api_chunk_info_overworld,
-            Dimension.nether: api.v2.api_chunk_info_nether,
-            Dimension.end: api.v2.api_chunk_info_end
-        }[dimension](self.world, chunk_x, chunk_y, chunk_z)
-        return chunk[block_y][block_z][block_x]
+        if (chunk_x, chunk_y, chunk_z) not in chunk_cache:
+            chunk_cache[chunk_x, chunk_y, chunk_z] = {
+                Dimension.overworld: api.v2.api_chunk_info_overworld,
+                Dimension.nether: api.v2.api_chunk_info_nether,
+                Dimension.end: api.v2.api_chunk_info_end
+            }[dimension](self.world, chunk_x, chunk_y, chunk_z)
+        return chunk_cache[chunk_x, chunk_y, chunk_z][block_y][block_z][block_x]
