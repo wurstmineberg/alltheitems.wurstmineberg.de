@@ -197,7 +197,7 @@ def item_page(item_stub, block=False):
                     %block_info = Block(item_stub).info()
                     <p>{{item_info['name']}} can be obtained by mining <a href="{{'/block/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/block/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/block/{}/{}'.format(plugin, item_id)}}">{{block_info['name'] if block_info['name'] != item_info['name'] else 'its block form'}}</a>{{'.' if item_info.get('dropsSelf', True) is True else ', with the following properties:'}}</p>
                     %if item_info.get('dropsSelf', True) is not True:
-                        <pre style="text-align: left;">{{json.dumps(item['dropsSelf'], indent=4)}}</pre>
+                        <pre style="text-align: left;">{{json.dumps(item_info['dropsSelf'], indent=4)}}</pre>
                     %end
                     %i += 1
                 %end
