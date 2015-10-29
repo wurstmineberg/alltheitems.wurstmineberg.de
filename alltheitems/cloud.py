@@ -1,38 +1,379 @@
 import alltheitems.__main__ as ati
+
 import bottle
+import contextlib
+import itertools
 import json
 import pathlib
+import re
+
+import alltheitems.item
+import alltheitems.world
+
+def smart_chest_schematic(document_root=ati.document_root):
+    layers = {}
+    with (document_root / 'static' / 'smartchest.txt').open() as smart_chest_layers:
+        current_y = None
+        current_layer = None
+        for line in smart_chest_layers:
+            if line == '\n':
+                continue
+            match = re.fullmatch('layer (-?[0-9]+)\n', line)
+            if match:
+                # new layer
+                if current_y is not None:
+                    layers[current_y] = current_layer
+                current_y = int(match.group(1))
+                current_layer = []
+            else:
+                current_layer.append(line.rstrip('\r\n'))
+        if current_y is not None:
+            layers[current_y] = current_layer
+    return sorted(layers.items())
 
 def chest_iter():
     """Returns an iterator yielding tuples (x, corridor, y, floor, z, chest)."""
-    with (ati.assets_root / 'json/cloud.json').open() as cloud_json:
+    with (ati.assets_root / 'json' / 'cloud.json').open() as cloud_json:
         cloud_data = json.load(cloud_json)
     for y, floor in enumerate(cloud_data):
         for x, corridor in sorted(((int(x), corridor) for x, corridor in floor.items()), key=lambda tup: tup[0]):
             for z, chest in enumerate(corridor):
                 yield x, corridor, y, floor, z, chest
 
-def chest_background_color(cloud_chest):
-    exists = cloud_chest.get('exists', True)
-    has_smart_chest = cloud_chest.get('hasSmartChest', True)
-    has_sorter = cloud_chest.get('hasSorter', exists)
-    has_overflow = cloud_chest.get('hasOverflow', exists)
-    stackable = ati.item_info_from_stub(cloud_chest).get('stackable', True)
-    if stackable and has_sorter and not has_overflow:
-        return '#f00'
-    elif not exists:
-        return '#777'
-    elif not has_smart_chest:
-        return '#f70'
-    elif not stackable:
-        return '#0ff'
-    elif not has_sorter:
-        return '#ff0'
+def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root):
+    if items_data is None:
+        with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+            items_data = json.load(items_file)
+    if isinstance(item_stub, str):
+        item_stub = {'id': item_stub}
+    if 'name' in item_stub:
+        item_name = item_stub['name']
+        del item_stub['name']
     else:
-        return 'transparent'
+        item_name = alltheitems.item.Item(item_stub).info()['name']
+    item = alltheitems.item.Item(item_stub)
+    state = None, '✓'
+    x, y, z = coords
+    # determine the base coordinate, i.e. the position of the north half of the access chest
+    if z % 2 == 0:
+        # left wall
+        base_x = 15 * x + 2
+    else:
+        # right wall
+        base_x = 15 * x - 3
+    base_y = 73 - 10 * y
+    base_z = 28 + 10 * y + 4 * (z // 2)
+    # does the access chest exist?
+    exists = False
+    north_half = block_at(base_x, base_y, base_z)
+    south_half = block_at(base_x, base_y, base_z + 1)
+    if north_half['id'] != 'minecraft:chest' and south_half['id'] != 'minecraft:chest':
+        state = 'gray', 'Access chest does not exist'
+    elif north_half['id'] != 'minecraft:chest':
+        state = 'gray', 'North half of access chest does not exist'
+    elif south_half['id'] != 'minecraft:chest':
+        state = 'gray', 'South half of access chest does not exist'
+    else:
+        exists = True
+    # does it have a SmartChest?
+    has_smart_chest = False
+    missing_droppers = set()
+    for dropper_y in range(base_y - 7, base_y):
+        dropper = block_at(base_x, dropper_y, base_z)
+        if dropper['id'] != 'minecraft:dropper':
+            missing_droppers.add(dropper_y)
+    if len(missing_droppers) == 7:
+        if state[0] is None:
+            state = 'orange', 'SmartChest droppers do not exist'
+    elif len(missing_droppers) > 1:
+        if state[0] is None:
+            state = 'orange', 'SmartChest droppers at y={} do not exist'.format(missing_droppers)
+    elif len(missing_droppers) == 1:
+        if state[0] is None:
+            state = 'orange', 'SmartChest dropper at y={} does not exist'.format(next(iter(missing_droppers)))
+    else:
+        has_smart_chest = True
+    # is it stackable?
+    stackable = item.info().get('stackable', True)
+    if not stackable and state[0] is None:
+        state = 'cyan', state[1]
+    # does it have a sorter?
+    has_sorter = False
+    sorting_hopper = block_at(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z)
+    if sorting_hopper['id'] != 'minecraft:hopper':
+        if state[0] is None:
+            state = 'yellow', 'Sorting hopper does not exist'
+    else:
+        for slot in sorting_hopper['tileEntity']['Items']:
+            if slot['Slot'] == 0 and stackable and not item.matches_slot(slot) and alltheitems.item.Item('minecraft:ender_pearl').matches_slot(slot):
+                if state[0] is None or state[0] == 'cyan':
+                    state = 'yellow', 'Sorting hopper is full of Ender pearls, but the item is stackable'
+                break
+        else:
+            has_sorter = True
+    # does it have an overflow?
+    has_overflow = False
+    missing_overflow_hoppers = set()
+    for overflow_x in range(base_x + 3 if z % 2 == 0 else base_x - 3, base_x + 5 if z % 2 == 0 else base_x - 5):
+        overflow_hopper = block_at(overflow_x, base_y - 7, base_z - 1)
+        if overflow_hopper['id'] != 'minecraft:hopper':
+            missing_overflow_hoppers.add(overflow_x)
+    if len(missing_overflow_hoppers) == 0:
+        has_overflow = True
+    # state determined, check for errors
+    if stackable and has_sorter:
+        # error check: overflow exists
+        if not has_overflow:
+            if len(missing_overflow_hoppers) == 3:
+                return 'red', 'Missing overflow'
+            elif len(missing_overflow_hoppers) > 1:
+                return 'red', 'Overflow hoppers at x={} do not exist'.format(missing_overflow_hoppers)
+            elif len(missing_overflow_hoppers) == 1:
+                return 'red', 'Overflow hoppers at y={} does not exist'.format(next(iter(missing_overflow_hoppers)))
+            else:
+                return 'red', 'Missing overflow'
+    if exists:
+        # error check: wrong items in access chest
+        found_matching = False
+        found_non_matching = False
+        for slot in itertools.chain(north_half['tileEntity']['Items'], south_half['tileEntity']['Items']):
+            if not item.matches_slot(slot):
+                return 'red', 'Access chest contains items of the wrong kind'
+        # error check: wrong name on sign
+        sign = block_at(base_x - 1 if z % 2 == 0 else base_x + 1, base_y + 1, base_z + 1)
+        if sign['id'] != 'minecraft:wall_sign':
+            return 'red', 'Sign is missing'
+        text = []
+        for line in range(1, 5):
+            line_text = json.loads(sign['tileEntity']['Text{}'.format(line)])['text'].translate(dict.fromkeys(range(0xf700, 0xf704), None))
+            if len(line_text) > 0:
+                text.append(line_text)
+        text = ' '.join(text)
+        if text != item_name:
+            return 'red', 'Sign has wrong text: should be {!r}, is {!r}'.format(item_name, text)
+    if has_sorter:
+        # error check: sorting hopper
+        if sorting_hopper['damage'] != 2:
+            facings = {
+                0: 'down',
+                2: 'north',
+                3: 'south',
+                4: 'west',
+                5: 'east'
+            }
+            return 'red', 'Sorting hopper ({} {} {}) should be facing north (2), but is facing {} ({})'.format(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, facings[sorting_hopper['damage']], sorting_hopper['damage'])
+        empty_slots = set(range(5))
+        for slot in sorting_hopper['tileEntity']['Items']:
+            empty_slots.remove(slot['Slot'])
+            if slot['Slot'] == 0 and stackable:
+                if not item.matches_slot(slot) and not alltheitems.item.Item('minecraft:ender_pearl').matches_slot(slot):
+                    return 'red', 'Sorting hopper is sorting the wrong item: {}'.format(slot)
+            else:
+                if not alltheitems.item.Item('minecraft:ender_pearl').matches_slot(slot):
+                    return 'red', 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl)'.format(slot['Slot'], slot)
+            if alltheitems.item.Item('minecraft:ender_pearl').matches_slot(slot) and slot['Count'] > 1:
+                return 'red', 'Too many Ender pearls in slot {}'.format(slot['Slot'])
+        if len(empty_slots) > 0:
+            if len(empty_slots) == 5:
+                return 'red', 'Sorting hopper is empty'
+            elif len(empty_slots) == 1:
+                return 'red', 'Slot {} of the sorting hopper is empty'.format(next(iter(empty_slots)))
+            else:
+                return 'red', 'Some slots in the sorting hopper are empty: {}'.format(empty_slots)
+    if has_overflow:
+        # error check: overflow hopper chain
+        pass #TODO check if the overflow is connected to the Smelting Center item elevator
+    if exists and has_smart_chest and has_sorter and has_overflow:
+        # error check: all blocks
+        for layer_y, layer in smart_chest_schematic(document_root=document_root):
+            for layer_x, row in enumerate(layer):
+                for layer_z, block_symbol in enumerate(row):
+                    # determine the coordinate of the current block
+                    if z % 2 == 0:
+                        # left wall
+                        exact_x = base_x + 5 - layer_x
+                    else:
+                        # right wall
+                        exact_x = base_x - 5 + layer_x
+                    exact_y = base_y + layer_y
+                    exact_z = base_z + 3 - layer_z
+                    # determine current block
+                    block = block_at(exact_x, exact_y, exact_z)
+                    # check against schematic
+                    if block_symbol == ' ':
+                        # air
+                        if (z == 4 or z == 5) and layer_x == 0 and layer_y == -8 and layer_z == 2:
+                            # overflow hopper chain pointing down
+                            if block['id'] != 'minecraft:hopper':
+                                return 'red', 'Block at {} {} {} should be a hopper, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                            pass #TODO check facing
+                        else:
+                            if block['id'] != 'minecraft:air':
+                                return 'red', 'Block at {} {} {} should be air, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                    elif block_symbol == '!':
+                        # sign
+                        if block['id'] != 'minecraft:wall_sign':
+                            return 'red', 'Block at {} {} {} should be a sign, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check contents
+                    elif block_symbol == '#':
+                        # chest
+                        if block['id'] != 'minecraft:chest':
+                            return 'red', 'Block at {} {} {} should be a chest, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check contents
+                    elif block_symbol == '<':
+                        # hopper facing south
+                        if block['id'] != 'minecraft:hopper':
+                            return 'red', 'Block at {} {} {} should be a hopper, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check contents
+                    elif block_symbol == '>':
+                        # hopper facing north
+                        if layer_y == -7 and layer_x == 0 and z < 8:
+                            # the first few chests get ignored because their overflow points in the opposite direction
+                            pass #TODO introduce special checks for them
+                        else:
+                            if block['id'] != 'minecraft:hopper':
+                                return 'red', 'Block at {} {} {} should be a hopper, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                            pass #TODO check facing
+                            pass #TODO check contents
+                    elif block_symbol == '?':
+                        # any block
+                        pass
+                    elif block_symbol == 'C':
+                        # comparator
+                        if block['id'] != 'minecraft:unpowered_comparator':
+                            return 'red', 'Block at {} {} {} should be a comparator, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check direction and mode
+                    elif block_symbol == 'D':
+                        # dropper facing up
+                        if block['id'] != 'minecraft:dropper':
+                            return 'red', 'Block at {} {} {} should be a dropper, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check contents
+                    elif block_symbol == 'F':
+                        # furnace
+                        if layer_y == -6 and layer_x == 0 and z < 2:
+                            # the first few chests get ignored because their overflow points in the opposite direction
+                            pass #TODO introduce special checks for them
+                        else:
+                            if block['id'] != 'minecraft:furnace':
+                                return 'red', 'Block at {} {} {} should be a furnace, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                            pass #TODO check signal
+                    elif block_symbol == 'G':
+                        # glowstone
+                        if block['id'] != 'minecraft:glowstone':
+                            return 'red', 'Block at {} {} {} should be glowstone, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                    elif block_symbol == 'P':
+                        # upside-down oak stairs
+                        if block['id'] != 'minecraft:oak_stairs':
+                            return 'red', 'Block at {} {} {} should be oak stairs, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                    elif block_symbol == 'Q':
+                        # quartz top slab
+                        if block['id'] != 'minecraft:stone_slab':
+                            return 'red', 'Block at {} {} {} should be a quartz slab, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check material
+                    elif block_symbol == 'R':
+                        # repeater
+                        if block['id'] not in ('minecraft:unpowered_repeater', 'minecraft:powered_repeater'):
+                            return 'red', 'Block at {} {} {} should be a repeater, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check delay
+                    elif block_symbol == 'S':
+                        # stone top slab
+                        if block['id'] != 'minecraft:stone_slab':
+                            return 'red', 'Block at {} {} {} should be a stone slab, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check material
+                    elif block_symbol == 'T':
+                        # redstone torch attached to the side of a block
+                        if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
+                            return 'red', 'Block at {} {} {} should be a redstone torch, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                    elif block_symbol == '^':
+                        # hopper facing outward
+                        if block['id'] != 'minecraft:hopper':
+                            return 'red', 'Block at {} {} {} should be a hopper, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check contents
+                    elif block_symbol == 'c':
+                        # crafting table
+                        if layer_y == -7 and (z < 4 or z < 6 and layer_z > 1):
+                            if block['id'] != 'minecraft:stone':
+                                return 'red', 'Block at {} {} {} should be stone, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                            pass #TODO check damage
+                        else:
+                            if block['id'] != 'minecraft:crafting_table':
+                                return 'red', 'Block at {} {} {} should be a crafting table, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                    elif block_symbol == 'i':
+                        # torch attached to the top of a block
+                        if block['id'] != 'minecraft:torch':
+                            return 'red', 'Block at {} {} {} should be a torch, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                    elif block_symbol == 'p':
+                        # oak planks
+                        if layer_y == -8 and (z < 4 or z < 6 and layer_z > 1):
+                            if block['id'] != 'minecraft:stone':
+                                return 'red', 'Block at {} {} {} should be stone, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                            pass #TODO check damage
+                        else:
+                            if block['id'] != 'minecraft:planks':
+                                return 'red', 'Block at {} {} {} should be oak planks, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                            pass #TODO check material
+                    elif block_symbol == 'r':
+                        # redstone dust
+                        if block['id'] != 'minecraft:redstone_wire':
+                            return 'red', 'Block at {} {} {} should be redstone, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                    elif block_symbol == 's':
+                        # stone
+                        if block['id'] != 'minecraft:stone':
+                            return 'red', 'Block at {} {} {} should be stone, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check damage
+                    elif block_symbol == 't':
+                        # redstone torch attached to the top of a block
+                        if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
+                            return 'red', 'Block at {} {} {} should be a redstone torch, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                    elif block_symbol == 'v':
+                        # hopper facing inwards
+                        if block['id'] != 'minecraft:hopper':
+                            return 'red', 'Block at {} {} {} should be a hopper, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check contents
+                    elif block_symbol == 'x':
+                        # hopper facing down
+                        if block['id'] != 'minecraft:hopper':
+                            return 'red', 'Block at {} {} {} should be a hopper, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check facing
+                        pass #TODO check contents
+                    elif block_symbol == '~':
+                        # hopper chain
+                        if block['id'] == 'minecraft:hopper':
+                            pass #TODO check facing
+                            pass #TODO check alignment
+                        elif block['id'] == 'minecraft:air':
+                            pass #TODO check alignment
+                        else:
+                            return 'red', 'Block at {} {} {} should be a hopper or air, is {}'.format(exact_x, exact_y, exact_z, block['id'])
+                        pass #TODO check hopper chain integrity
+                    else:
+                        return 'red', 'Not yet implemented: block at {} {} {} should be {}'.format(exact_x, exact_y, exact_z, block_symbol)
+    return state
+
+def chest_background_color(coords, item_stub, *, items_data=None):
+    return {
+        'cyan': '#0ff',
+        'gray': '#777',
+        'red': '#f00',
+        'orange': '#f70',
+        'yellow': '#ff0',
+        None: 'transparent'
+    }[chest_state(coords, item_stub, items_data=items_data)[0]]
 
 def image_from_chest(cloud_chest):
-    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(cloud_chest), ati.item_stub_image(cloud_chest))
+    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(cloud_chest), alltheitems.item.Item(cloud_chest).image())
 
 def index():
     yield ati.header(title='Cloud')

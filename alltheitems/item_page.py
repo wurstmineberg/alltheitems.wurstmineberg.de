@@ -1,6 +1,9 @@
 import alltheitems.__main__ as ati
+
 import api.v2
 import bottle
+
+import alltheitems.item
 
 def is_int_str(s):
     try:
@@ -10,6 +13,10 @@ def is_int_str(s):
     return True
 
 def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_ints=False):
+    if block:
+        item_stub_image = lambda item_stub: alltheitems.item.Block(item_stub).image()
+    else:
+        item_stub_image = lambda item_stub: alltheitems.item.Item(item_stub).image()
     if block and 'blockID' not in item_info:
         bottle.abort(404, 'There is no block with the ID {}. There is however an item with that ID.'.format(item_stub['id']))
     if not block and 'itemID' not in item_info:
@@ -68,10 +75,10 @@ def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_int
             <h2>Damage values</h2>
             <p>
                 %for damage in damage_values:
-                    {{!item_stub_image({'id': item_stub['id'], 'damage': damage}, block=block)}}
+                    {{!item_stub_image({'id': item_stub['id'], 'damage': damage})}}
                 %end
             </p>
-        """, damage_values=damage_values, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
+        """, damage_values=damage_values, item_stub=item_stub, item_stub_image=item_stub_image)
     elif 'effects' in item_info:
         # return effect value disambiguation page
         effects = (effect_plugin + ':' + effect_id for effect_plugin in sorted(item_info['effects']) for effect_id in sorted(item_info['effects'][effect_plugin]))
@@ -79,10 +86,10 @@ def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_int
             <h2>Effects</h2>
             <p>
                 %for effect in effects:
-                    {{!item_stub_image({'id': item_stub['id'], 'effect': effect}, block=block)}}
+                    {{!item_stub_image({'id': item_stub['id'], 'effect': effect})}}
                 %end
             </p>
-        """, effects=effects, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
+        """, effects=effects, item_stub=item_stub, item_stub_image=item_stub_image)
     elif 'tagPath' in item_info:
         if tag_values_are_ints:
             tag_values = sorted(((None if tag_value == '' else int(tag_value)) for tag_value in item_info['tagVariants']), key=lambda tag_value: -1 if tag_value is None else tag_value)
@@ -92,10 +99,10 @@ def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_int
             <h2>Variants</h2>
             <p>
                 %for tag_value in tag_values:
-                    {{!item_stub_image({'id': item_stub['id'], 'tagValue': tag_value}, block=block)}}
+                    {{!item_stub_image({'id': item_stub['id'], 'tagValue': tag_value})}}
                 %end
             </p>
-        """, tag_values=tag_values, item_stub=item_stub, item_stub_image=ati.item_stub_image, block=block)
+        """, tag_values=tag_values, item_stub=item_stub, item_stub_image=item_stub_image)
 
 def item_title(item_info, item_stub, *, block=False, tag_path=None):
     return bottle.template("""
@@ -104,7 +111,7 @@ def item_title(item_info, item_stub, *, block=False, tag_path=None):
         <p class="muted">
             {{plugin}}:{{!'<a href="/{}/{}/{}">'.format('block' if block else 'item', plugin, item_id) if 'damage' in item_stub or 'effect' in item_stub or 'tagValue' in item_stub else ''}}{{item_id}}{{!'</a>/{}'.format(item_stub['damage']) if 'damage' in item_stub else '</a> with {} effect'.format(item_stub['effect']) if 'effect' in item_stub else ('</a> with tag {} not set'.format('.'.join(tag_path)) if item_stub['tagValue'] is None else '</a> with tag {} set to {}'.format('.'.join(tag_path), item_stub['tagValue'])) if 'tagValue' in item_stub else ''}}
         </p>
-    """, item_image=ati.item_image, item_info=item_info, item_stub=item_stub, block=block, tag_path=tag_path)
+    """, item_image=alltheitems.item.image_from_info, item_info=item_info, item_stub=item_stub, block=block, tag_path=tag_path)
 
 def item_page(item_stub, block=False):
     if isinstance(item_stub, str):
@@ -153,14 +160,14 @@ def item_page(item_stub, block=False):
             <div id="obtaining" class="section hidden">
                 %i = 0
                 %if block and 'itemID' in item_info:
-                    %item = ati.item_info_from_stub(item_stub, block=False)
+                    %item = Item(item_stub).info()
                     %if 'whenPlaced' not in item:
                         <p>{{item_info['name']}} can be obtained by placing <a href="{{'/item/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/item/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/item/{}/{}'.format(plugin, item_id)}}">{{item['name'] if item['name'] != item_info['name'] else 'its item form'}}</a>.</p>
                         %i += 1
                     %end
                 %end
                 %if (not block) and 'blockID' in item_info and item_info.get('dropsSelf', True):
-                    %block_info = ati.item_info_from_stub(item_stub, block=True)
+                    %block_info = Block(item_stub).info()
                     <p>{{item_info['name']}} can be obtained by mining <a href="{{'/block/{}/{}/{}'.format(plugin, item_id, item_stub['damage']) if 'damage' in item_stub else '/block/{}/{}/effect/{}/{}'.format(plugin, item_id, effect_plugin, effect_id) if 'effect' in item_stub else '/block/{}/{}'.format(plugin, item_id)}}">{{block_info['name'] if block_info['name'] != item_info['name'] else 'its block form'}}</a>{{'.' if item_info.get('dropsSelf', True) is True else ', with the following properties:'}}</p>
                     %if item_info.get('dropsSelf', True) is not True:
                         <pre style="text-align: left;">{{json.dumps(item['dropsSelf'], indent=4)}}</pre>
@@ -203,7 +210,7 @@ def item_page(item_stub, block=False):
                     </p>
                 %end
             </div>
-        """, ati=ati, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
+        """, Item=alltheitems.item.Item, Block=alltheitems.item.Block, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
         #TODO usage
         yield bottle.template("""
             <div id="usage" class="section hidden">
