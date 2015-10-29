@@ -495,7 +495,7 @@ def index():
             'yellow': "<p>A yellow background means that the chest doesn't have a sorter yet.</p>",
             None: '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>'
         }
-        for color in colors_to_explain:
+        for chest_color in colors_to_explain:
             if chest_color is not None:
                 yield color_explanations[chest_color]
         if None in colors_to_explain and len(colors_to_explain) > 1:
