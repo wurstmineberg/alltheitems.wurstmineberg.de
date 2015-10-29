@@ -372,8 +372,8 @@ def chest_background_color(coords, item_stub, *, items_data=None):
         None: 'transparent'
     }[chest_state(coords, item_stub, items_data=items_data)[0]]
 
-def image_from_chest(cloud_chest):
-    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(cloud_chest), alltheitems.item.Item(cloud_chest).image())
+def image_from_chest(coords, cloud_chest):
+    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest), alltheitems.item.Item(cloud_chest).image())
 
 def index():
     yield ati.header(title='Cloud')
@@ -441,12 +441,12 @@ def index():
                                     %end
                                     %corridor = floor[str(x)]
                                     %if len(corridor) > z_right:
-                                        {{!image(corridor[z_right])}}
+                                        {{!image((x, y, z_right), corridor[z_right])}}
                                     %else:
                                         <td></td>
                                     %end
                                     %if len(corridor) > z_left:
-                                        {{!image(corridor[z_left])}}
+                                        {{!image((x, y, z_left), corridor[z_left])}}
                                         %found = True
                                     %else:
                                         <td></td>
