@@ -13,6 +13,7 @@ import alltheitems.world
 
 HOPPER_FACINGS = {
     0: 'down',
+    1: 'up', #for droppers
     2: 'north',
     3: 'south',
     4: 'west',
@@ -250,7 +251,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                             if block['id'] != 'minecraft:hopper':
                                 return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                             if block['damage'] != 0: # down
-                                return 'red', 'Overflow hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']], block['damage'])
+                                return 'red', 'Overflow hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                         else:
                             if block['id'] != 'minecraft:air':
                                 return 'red', 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
@@ -258,8 +259,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # sign
                         if block['id'] != 'minecraft:wall_sign':
                             return 'red', 'Block at {} {} {} should be a sign, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
-                        pass #TODO check contents
+                        if block['damage'] != (4 if z % 2 == 0 else 5):
+                            return 'red', 'Sign at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z)
                     elif block_symbol == '#':
                         # chest
                         if block['id'] != 'minecraft:chest':
@@ -271,7 +272,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # hopper facing south
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        if block['damage'] != 3: # south
+                            return 'red', 'Hopper at {} {} {} should be pointing south, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == '>':
                         # hopper facing north
@@ -281,7 +283,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         else:
                             if block['id'] != 'minecraft:hopper':
                                 return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                            pass #TODO check facing
+                            if block['damage'] != 2: # north
+                                return 'red', 'Hopper at {} {} {} should be pointing north, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                             pass #TODO check contents
                     elif block_symbol == '?':
                         # any block
@@ -295,7 +298,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # dropper facing up
                         if block['id'] != 'minecraft:dropper':
                             return 'red', 'Block at {} {} {} should be a dropper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        if block['damage'] != 1: # up
+                            return 'red', 'Dropper at {} {} {} should be facing up, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == 'F':
                         # furnace
@@ -342,7 +346,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # hopper facing outward
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        if block['damage'] != (5 if z % 2 == 0 else 4): # east / west
+                            return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'east' if z % 2 == 0 else 'west', HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == 'c':
                         # crafting table
@@ -396,13 +401,15 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # hopper facing inwards
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        if block['damage'] != (4 if z % 2 == 0 else 5): # west / east
+                            return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'west' if z % 2 == 0 else 'east', HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == 'x':
                         # hopper facing down
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        if block['damage'] != 0: # down
+                            return 'red', 'Hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == '~':
                         # hopper chain
