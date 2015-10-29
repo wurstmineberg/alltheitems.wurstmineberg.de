@@ -10,6 +10,34 @@ import re
 import alltheitems.item
 import alltheitems.world
 
+def hopper_chain_connected(start_coords, end_coords, *, world=None, chunk_cache=None):
+    if world is None:
+        world = alltheitems.world.World()
+    if chunk_cache is None:
+        chunk_cache = {}
+    visited_coords = set()
+    x, y, z = start_coords
+    while (x, y, z) != end_coords:
+        if (x, y, z) in visited_coords:
+            return False
+        visited_coords.add((x, y, z))
+        block = world.block_at(x, y, z, chunk_cache=chunk_cache)
+        if block['id'] != 'minecraft:hopper':
+            return False
+        if block['damage'] == 0:
+            y -= 1 # down
+        elif block['damage'] == 2:
+            z -= 1 # north
+        elif block['damage'] == 3:
+            z += 1 # south
+        elif block['damage'] == 4:
+            x -= 1 # west
+        elif block['damage'] == 5:
+            x += 1 # east
+        else:
+            raise ValueError('Unknown hopper facing {} at {}'.format(block['damage'], (x, y, z)))
+    return True
+
 def smart_chest_schematic(document_root=ati.document_root):
     layers = {}
     with (document_root / 'static' / 'smartchest.txt').open() as smart_chest_layers:
@@ -191,7 +219,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                 return 'red', 'Some slots in the sorting hopper are empty: {}'.format(empty_slots)
     if has_overflow:
         # error check: overflow hopper chain
-        pass #TODO check if the overflow is connected to the Smelting Center item elevator
+        if not hopper_chain_connected((base_x + 5 if z % 2 == 0 else base_x - 5, base_y - 7, base_y - 1), (-35, 6, 38), chunk_cache=chunk_cache):
+            return 'red', 'Overflow hopper chain is not connected to the Smelting Center item elevator'
     if exists and has_smart_chest and has_sorter and has_overflow:
         # error check: all blocks
         for layer_y, layer in smart_chest_schematic(document_root=document_root):
