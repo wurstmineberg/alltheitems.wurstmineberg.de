@@ -305,7 +305,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # dropper facing up
                         if block['id'] != 'minecraft:dropper':
                             return 'red', 'Block at {} {} {} should be a dropper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        if block['damage'] != 1: # up
+                        if block['damage'] & 0x7 != 1: # up
                             return 'red', 'Dropper at {} {} {} should be facing up, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
                         pass #TODO check contents
                     elif block_symbol == 'F':
