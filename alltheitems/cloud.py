@@ -401,8 +401,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         return 'red', 'Not yet implemented: block at {} {} {} should be {}'.format(exact_x, exact_y, exact_z, block_symbol)
     return state
 
-def chest_background_color(coords, item_stub, *, items_data=None, chunk_cache=None):
-    return {
+def chest_background_color(coords, item_stub, *, items_data=None, chunk_cache=None, colors_to_explain=colors_to_explain):
+    color = {
         'cyan': '#0ff',
         'gray': '#777',
         'red': '#f00',
@@ -410,32 +410,18 @@ def chest_background_color(coords, item_stub, *, items_data=None, chunk_cache=No
         'yellow': '#ff0',
         None: 'transparent'
     }[chest_state(coords, item_stub, items_data=items_data, chunk_cache=chunk_cache)[0]]
+    if colors_to_explain is not None:
+        colors_to_explain.add(color)
+    return color
 
-def image_from_chest(coords, cloud_chest, chunk_cache=None):
-    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, chunk_cache=chunk_cache), alltheitems.item.Item(cloud_chest).image())
+def image_from_chest(coords, cloud_chest, *, chunk_cache=None, colors_to_explain=colors_to_explain):
+    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest).image())
 
 def index():
     yield ati.header(title='Cloud')
     def body():
         chunk_cache = {}
         yield '<p>The <a href="http://wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="http://{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=ati.host)
-        color_explanations = {
-            '#f00': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
-            '#777': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
-            '#f70': "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>",
-            '#0ff': '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>',
-            '#ff0': "<p>A yellow background means that the chest doesn't have a sorter yet.</p>",
-            'transparent': '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>'
-        }
-        explained_colors = set()
-        for x, _, y, _, z, chest in chest_iter():
-            chest_color = chest_background_color((x, y, z), chest, chunk_cache=chunk_cache)
-            if chest_color not in explained_colors:
-                if chest_color != 'transparent':
-                    yield color_explanations[chest_color]
-                explained_colors.add(chest_color)
-        if 'transparent' in explained_colors and len(explained_colors) > 1:
-            yield color_explanations['transparent']
         yield """<style type="text/css">
             .item-table td {
                 box-sizing: content-box;
@@ -447,6 +433,7 @@ def index():
                 border-left: 1px solid gray;
             }
         </style>"""
+        colors_to_explain = set()
         floors = {}
         for x, corridor, y, floor, z, chest in chest_iter():
             if y not in floors:
@@ -481,12 +468,12 @@ def index():
                                     %end
                                     %corridor = floor[str(x)]
                                     %if len(corridor) > z_right:
-                                        {{!image((x, y, z_right), corridor[z_right], chunk_cache=chunk_cache)}}
+                                        {{!image((x, y, z_right), corridor[z_right], chunk_cache=chunk_cache, colors_to_explain=colors_to_explain)}}
                                     %else:
                                         <td></td>
                                     %end
                                     %if len(corridor) > z_left:
-                                        {{!image((x, y, z_left), corridor[z_left], chunk_cache=chunk_cache)}}
+                                        {{!image((x, y, z_left), corridor[z_left], chunk_cache=chunk_cache, colors_to_explain=colors_to_explain)}}
                                         %found = True
                                     %else:
                                         <td></td>
@@ -499,6 +486,19 @@ def index():
                         %end
                     </tbody>
                 </table>
-            """, ati=ati, image=image_from_chest, floor=floor, y=y, chunk_cache=chunk_cache)
+            """, ati=ati, image=image_from_chest, floor=floor, y=y, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain)
+        color_explanations = {
+            '#f00': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
+            '#777': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
+            '#f70': "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>",
+            '#0ff': '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>',
+            '#ff0': "<p>A yellow background means that the chest doesn't have a sorter yet.</p>",
+            'transparent': '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>'
+        }
+        for color in colors_to_explain:
+            if chest_color != 'transparent':
+                yield color_explanations[chest_color]
+        if 'transparent' in colors_to_explain and len(colors_to_explain) > 1:
+            yield color_explanations['transparent']
     yield from ati.html_exceptions(body())
     yield ati.footer(linkify_headers=True)
