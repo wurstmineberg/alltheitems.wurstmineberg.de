@@ -427,7 +427,6 @@ def image_from_chest(coords, cloud_chest, *, chunk_cache=None, items_data=None, 
 def index():
     yield ati.header(title='Cloud')
     def body():
-        chunk_cache = {}
         yield '<p>The <a href="http://wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="http://{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=ati.host)
         yield """<style type="text/css">
             .item-table td {
@@ -440,6 +439,9 @@ def index():
                 border-left: 1px solid gray;
             }
         </style>"""
+        chunk_cache = {}
+        with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+            items_data = json.load(items_file)
         colors_to_explain = set()
         floors = {}
         for x, corridor, y, floor, z, chest in chest_iter():
