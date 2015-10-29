@@ -421,7 +421,7 @@ def chest_background_color(coords, item_stub, *, items_data=None, chunk_cache=No
         None: 'transparent'
     }[color]
 
-def image_from_chest(coords, cloud_chest, *, chunk_cache=None, colors_to_explain=None):
+def image_from_chest(coords, cloud_chest, *, chunk_cache=None, items_data=None, colors_to_explain=None):
     return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest, items_data=items_data).image())
 
 def index():
@@ -475,12 +475,12 @@ def index():
                                     %end
                                     %corridor = floor[str(x)]
                                     %if len(corridor) > z_right:
-                                        {{!image((x, y, z_right), corridor[z_right], chunk_cache=chunk_cache, colors_to_explain=colors_to_explain)}}
+                                        {{!image((x, y, z_right), corridor[z_right])}}
                                     %else:
                                         <td></td>
                                     %end
                                     %if len(corridor) > z_left:
-                                        {{!image((x, y, z_left), corridor[z_left], chunk_cache=chunk_cache, colors_to_explain=colors_to_explain)}}
+                                        {{!image((x, y, z_left), corridor[z_left])}}
                                         %found = True
                                     %else:
                                         <td></td>
@@ -493,7 +493,7 @@ def index():
                         %end
                     </tbody>
                 </table>
-            """, ati=ati, image=image_from_chest, floor=floor, y=y, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain)
+            """, ati=ati, image=lambda coords, item_stub: image_from_chest(coords, item_stub, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data), floor=floor, y=y)
         color_explanations = {
             'red': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
             'gray': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
