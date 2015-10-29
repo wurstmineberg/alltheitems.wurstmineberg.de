@@ -380,7 +380,7 @@ def index():
     def body():
         yield '<p>The <a href="http://wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="http://{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=ati.host)
         color_explanations = {
-            '#f00': '<p>A red background means that the chest has a sorter but the SmartChest and/or the overflow is missing. This can break other SmartChests, so it should be fixed as soon as possible!</p>',
+            '#f00': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
             '#777': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
             '#f70': "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>",
             '#0ff': '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>',
@@ -388,8 +388,8 @@ def index():
             'transparent': '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>'
         }
         explained_colors = set()
-        for _, _, _, _, _, chest in chest_iter():
-            chest_color = chest_background_color(chest)
+        for x, _, y, _, z, chest in chest_iter():
+            chest_color = chest_background_color((x, y, z), chest)
             if chest_color not in explained_colors:
                 if chest_color != 'transparent':
                     yield color_explanations[chest_color]
