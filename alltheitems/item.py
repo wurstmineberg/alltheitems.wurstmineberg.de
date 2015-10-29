@@ -18,26 +18,26 @@ def data_type(plugin, string_id, *, items_data=None):
 
 def linkify(plugin, string_id, html, link, *, block=False):
     if link is False:
-        return ret
+        return html
     elif link is None or isinstance(link, int):
         if link is None:
             # base item
-            return '<a href="/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, ret)
+            return '<a href="/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, html)
         else:
             # damage value
-            return '<a href="/{}/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link, ret)
+            return '<a href="/{}/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link, html)
     elif isinstance(link, dict):
         if 'tagValue' in link:
             # tag variant
-            return '<a href="/{}/{}/{}/tag/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, 'null' if link['tagValue'] is None else link['tagValue'], ret)
+            return '<a href="/{}/{}/{}/tag/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, 'null' if link['tagValue'] is None else link['tagValue'], html)
         else:
             raise ValueError('Invalid link field')
     elif isinstance(link, str) and re.match('[0-9a-z_]+:[0-9a-z_]+', link):
         # effect
         effect_plugin, effect_id = link.split(':', 1)
-        return '<a href="/{}/{}/{}/effect/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, effect_plugin, effect_id, ret)
+        return '<a href="/{}/{}/{}/effect/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, effect_plugin, effect_id, html)
     else:
-        return '<a href="{}">{}</a>'.format(link, ret)
+        return '<a href="{}">{}</a>'.format(link, html)
 
 
 def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
