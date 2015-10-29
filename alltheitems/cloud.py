@@ -376,7 +376,17 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # stone
                         if block['id'] != 'minecraft:stone':
                             return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check damage
+                        if block['damage'] != 0:
+                            stone_variant = {
+                                0: 'stone',
+                                1: 'granite',
+                                2: 'polished granite',
+                                3: 'diorite',
+                                4: 'polished diorite',
+                                5: 'andesite',
+                                6: 'polished andesite'
+                            }[block['damage']]
+                            return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant)
                     elif block_symbol == 't':
                         # redstone torch attached to the top of a block
                         if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
