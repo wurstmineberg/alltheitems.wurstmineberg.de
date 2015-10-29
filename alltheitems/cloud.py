@@ -151,7 +151,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
     # does it have an overflow?
     has_overflow = False
     missing_overflow_hoppers = set()
-    for overflow_x in range(base_x + 3 if z % 2 == 0 else base_x - 3, base_x + 5 if z % 2 == 0 else base_x - 5):
+    for overflow_x in range(base_x + 3 if z % 2 == 0 else base_x - 3, base_x + 6 if z % 2 == 0 else base_x - 6, 1 if z % 2 == 0 else -1):
         overflow_hopper = block_at(overflow_x, base_y - 7, base_z - 1, chunk_cache=chunk_cache)
         if overflow_hopper['id'] != 'minecraft:hopper':
             missing_overflow_hoppers.add(overflow_x)
