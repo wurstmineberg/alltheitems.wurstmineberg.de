@@ -219,7 +219,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                 return 'red', 'Some slots in the sorting hopper are empty: {}'.format(empty_slots)
     if has_overflow:
         # error check: overflow hopper chain
-        if not hopper_chain_connected((base_x + 5 if z % 2 == 0 else base_x - 5, base_y - 7, base_y - 1), (-35, 6, 38), chunk_cache=chunk_cache):
+        if not hopper_chain_connected((base_x + 5 if z % 2 == 0 else base_x - 5, base_y - 7, base_z - 1), (-35, 6, 38), chunk_cache=chunk_cache):
             return 'red', 'Overflow hopper chain is not connected to the Smelting Center item elevator'
     if exists and has_smart_chest and has_sorter and has_overflow:
         # error check: all blocks
