@@ -2,23 +2,21 @@ import alltheitems.__main__ as ati
 
 import api.v2
 import re
+import xml.sax.saxutils
 
-def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
-    if classes is None:
-        classes = []
-    if block and 'blockInfo' in item_info:
-        item_info = item_info.copy()
-        item_info.update(item_info['blockInfo'])
-        del item_info['blockInfo']
-    if 'image' in item_info:
-        if tint is None:
-            ret = '<img src="http://assets.{host}/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style, host=ati.host)
-        else:
-            ret = '<img style="background: url(http://api.{host}/v2/minecraft/items/render/dyed-by-id/{}/{}/{:06x}.png)" src="http://assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(plugin, item_id, tint, item_info['image'], ' '.join(classes), style, host=ati.host)
-    else:
-        ret = '<img src="http://assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=ati.host)
-    if tooltip:
-        ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
+def data_type(plugin, string_id, *, items_data=None):
+    if items_data is None:
+        with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+            items_data = json.load(items_file)
+    item_info = items_data[plugin][string_id]
+    if 'damageValues' in item_info:
+        return 'damage'
+    if 'effects' in item_info:
+        return 'effect'
+    if 'tagPath' in item_info:
+        return 'tagValue'
+
+def linkify(plugin, string_id, html, link, *, block=False):
     if link is False:
         return ret
     elif link is None or isinstance(link, int):
@@ -40,6 +38,25 @@ def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, st
         return '<a href="/{}/{}/{}/effect/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, effect_plugin, effect_id, ret)
     else:
         return '<a href="{}">{}</a>'.format(link, ret)
+
+
+def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
+    if classes is None:
+        classes = []
+    if block and 'blockInfo' in item_info:
+        item_info = item_info.copy()
+        item_info.update(item_info['blockInfo'])
+        del item_info['blockInfo']
+    if 'image' in item_info:
+        if tint is None:
+            ret = '<img src="http://assets.{host}/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style, host=ati.host)
+        else:
+            ret = '<img style="background: url(http://api.{host}/v2/minecraft/items/render/dyed-by-id/{}/{}/{:06x}.png)" src="http://assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(plugin, item_id, tint, item_info['image'], ' '.join(classes), style, host=ati.host)
+    else:
+        ret = '<img src="http://assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=ati.host)
+    if tooltip:
+        ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
+    return linkify(plugin, string_id, ret, link, block=block)
 
 def info_from_stub(item_stub, block=False):
     item_info = api.v2.api_item_by_id(*item_stub['id'].split(':', 1))
@@ -103,9 +120,20 @@ class Item:
         if isinstance(item_stub, str):
             self.stub = {'id': item_stub}
         elif isinstance(item_stub, dict):
+            if 'id' not in item_stub:
+                raise ValueError('Missing item ID')
             self.stub = item_stub
         else:
             raise TypeError('Cannot create an item from {}'.format(type(item_stub)))
+        allowed_keys = {
+            'id',
+            'damage',
+            'effect',
+            'tagValue',
+            'consumed',
+            'amount'
+        }
+        self.stub = {key: value for key, value in self.stub.items() if key in allowed_keys}
 
     def __eq__(self, other):
         if not isinstance(other, Item):
@@ -126,7 +154,69 @@ class Item:
                     return False
         return True
 
+    def __str__(self):
+        info = self.info()
+        if 'name' in info:
+            return info['name']
+        if self.stub['id'].startswith('minecraft:'):
+            item_id = self.stub['id'][len('minecraft:'):]
+        else:
+            item_id = self.stub['id']
+        if len(self.stub) == 1:
+            return item_id
+        if len(self.stub) == 2:
+            if 'damage' in self.stub:
+                return '{}/{}'.format(item_id, self.stub['damage'])
+            if 'effect' in self.stub:
+                if self.stub['effect'].startswith('minecraft:'):
+                    return '{} of {}'.format(item_id, self.stub['effect'][len('minecraft:'):])
+                else:
+                    return '{} with effect {}'.format(item_id, self.stub['effect'])
+            if 'tagValue' in self.stub:
+                if self.stub['tagValue'] is None:
+                    return '{} without tag'.format(item_id)
+                else:
+                    return '{} with tag {}'.format(item_id, self.stub['tagValue'])
+        return str(self.stub)
+
+    @classmethod
+    def from_slot(cls, slot, *, items_data=None):
+        item_stub = {'id': slot['id']}
+        plugin, string_id = slot['id'].split(':', 1)
+        data_type = data_type(plugin, string_id, items_data=items_data)
+        if data_type is None:
+            pass
+        elif data_type == 'damage':
+            item_stub['damage'] = slot['Damage']
+        elif data_type == 'effect':
+            item_stub['effect'] = slot['tag']['Potion']
+        elif data_type == 'tagValue':
+            if items_data is None:
+                with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+                    items_data = json.load(items_file)
+            tag_path = items_data[plugin][string_id]['tagPath']
+            try:
+                tag = slot['tag']
+                for tag_path_elt in tag_path:
+                    tag = tag[tag_path_elt]
+                item_stub['tagValue'] = tag
+            except (IndexError, KeyError):
+                item_stub['tagValue'] = None
+        else:
+            raise NotImplementedError('Unknown data type: {!r}'.format(data_type))
+        return cls(item_stub)
+
     def image(self, link=True, tooltip=True):
+        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=link, tooltip=tooltip)
+
+    def info(self):
+        return info_from_stub(self.stub, block=self.is_block)
+
+    @property
+    def is_block(self):
+        return False
+
+    def link(self, link=True):
         if link is True:
             # derive link from item stub
             if 'damage' in self.stub:
@@ -137,10 +227,14 @@ class Item:
                 link = {'tagValue': self.stub['tagValue']}
             else:
                 link = None # base item
-        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), link=link, tooltip=tooltip)
+        return link
 
-    def info(self):
-        return info_from_stub(self.stub)
+    def link_text(self, text=None, *, link=True, raw_html=False):
+        link = self.link(link)
+        if text is None:
+            text = str(self)
+        plugin, string_id = self.stub['id'].split(':', 1)
+        return linkify(plugin, string_id, text if raw_html else xml.sax.saxutils.escape(text), link, block=self.is_block)
 
     def matches_slot(self, slot):
         if slot['id'] != self.stub['id']:
@@ -169,18 +263,10 @@ class Item:
         return True
 
 class Block(Item):
-    def image(self, link=True, tooltip=True):
-        if link is True:
-            # derive link from item stub
-            if 'damage' in self.stub:
-                link = self.stub['damage']
-            elif 'effect' in self.stub:
-                link = self.stub['effect']
-            elif 'tagValue' in self.stub:
-                link = {'tagValue': self.stub['tagValue']}
-            else:
-                link = None # base item
-        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=True, link=link, tooltip=tooltip)
+    @classmethod
+    def from_slot(cls, slot):
+        raise NotImplementedError('Cannot create a block from a slot')
 
-    def info(self):
-        return info_from_stub(self.stub, block=True)
+    @property
+    def is_block(self):
+        return True

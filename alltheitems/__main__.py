@@ -128,6 +128,20 @@ def footer(*, linkify_headers=False, additional_js=''):
     </html>
     """
 
+def join(sequence, *, word='and', default=None):
+    sequence = list(sequence)
+    if len(sequence) == 0:
+        if default is None:
+            raise IndexError('Tried to join empty sequence with no default')
+        else:
+            return str(default)
+    elif len(sequence) == 1:
+        return str(sequence[0])
+    elif len(sequence) == 2:
+        return '{} {} {}'.format(sequence[0], word, sequence[1])
+    else:
+        return ', '.join(sequence[:-1]) + ', {} {}'.format(word, sequence[-1])
+
 def ordinal(number):
     decimal = str(number)
     if decimal[-1] == '1' and number % 100 != 11:
