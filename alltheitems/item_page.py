@@ -167,9 +167,9 @@ def item_page(item_stub, block=False):
                         <p>The Cloud chest for {{item_info['name']}} is located on the {{coords[1]}}{{ordinal(coords[1])}} floor, in the {{'central' if coords[0] == 0 else '{}{}'.format(abs(coords[0]), ordinal(abs(coords[0])))}} corridor{{' to the left' if coords[0] > 0 else ' to the right' if coords[0] < 0 else ''}}. It is the {{coords[2] // 2 + 1}}{{ordinal(coords[2] // 2 + 1)}} chest on the {{'left' if coords[2] % 2 == 0 else 'right'}} wall.</p>
                         %color, state_message = chest_state
                         %if color is None:
-                            <p>{{state_message}}</p>
+                            <p>{{!state_message}}</p>
                         %else:
-                            <p {{color_map[color]}}>{{state_message}}</p>
+                            <p {{!color_map[color]}}>{{!state_message}}</p>
                         %end
                     %end
                 </div>
