@@ -210,7 +210,7 @@ class Item:
         return cls(item_stub, items_data=items_data)
 
     def image(self, link=True, tooltip=True):
-        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=link, tooltip=tooltip)
+        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=self.link(link), tooltip=tooltip)
 
     def info(self):
         return info_from_stub(self.stub, block=self.is_block)
