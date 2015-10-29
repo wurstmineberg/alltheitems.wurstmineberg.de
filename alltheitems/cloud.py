@@ -40,6 +40,13 @@ def chest_iter():
             for z, chest in enumerate(corridor):
                 yield x, corridor, y, floor, z, chest
 
+def chest_coords(item):
+    if not isinstance(item_stub, alltheitems.item.Item):
+        item_stub = alltheitems.item.Item(item)
+    for x, _, y, _, z, chest in chest_iter():
+        if item == chest:
+            return x, y, z
+
 def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
@@ -54,7 +61,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
     else:
         item_name = alltheitems.item.Item(item_stub).info()['name']
     item = alltheitems.item.Item(item_stub)
-    state = None, '✓'
+    state = None, 'Fill level info coming <a href="http://wiki.{{host}}/Soon™">soon™</a>.'
     x, y, z = coords
     # determine the base coordinate, i.e. the position of the north half of the access chest
     if z % 2 == 0:

@@ -104,6 +104,27 @@ class Item:
             self.stub = {'id': item_stub}
         elif isinstance(item_stub, dict):
             self.stub = item_stub
+        else:
+            raise TypeError('Cannot create an item from {}'.format(type(item_stub)))
+
+    def __eq__(self, other):
+        if not isinstance(other, Item):
+            try:
+                other = Item(other)
+            except TypeError:
+                return False
+        if self.stub['id'] != other.stub['id']:
+            return False
+        for attr in ('damage', 'effect', 'tagValue'):
+            if attr in self.stub:
+                if attr not in other.stub:
+                    return False
+                if self.stub[attr] != other.stub[attr]:
+                    return False
+            else:
+                if attr in other.stub:
+                    return False
+        return True
 
     def image(self, link=True, tooltip=True):
         if link is True:

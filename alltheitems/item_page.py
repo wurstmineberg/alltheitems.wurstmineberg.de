@@ -3,6 +3,7 @@ import alltheitems.__main__ as ati
 import api.v2
 import bottle
 
+import alltheitems.cloud
 import alltheitems.item
 
 def is_int_str(s):
@@ -141,12 +142,38 @@ def item_page(item_stub, block=False):
                 }
             </style>
         """
-        #TODO general
-        yield bottle.template("""
-            <div id="general" class="section">
-                <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
-            </div>
-        """, host=ati.host)
+        # general
+        if block:
+            yield bottle.template("""
+                <div id="general" class="section">
+                    <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
+                </div>
+            """, host=ati.host) #TODO
+        else:
+            coords = alltheitems.cloud.chest_coords(item_stub)
+            color_map = {
+                'cyan': 'class="text-info"',
+                'gray': 'class="muted"',
+                'red': 'class="text-danger"',
+                'orange': 'style="color: #bc714d;"',
+                'yellow': 'class="text-warning"',
+            }
+            yield bottle.template("""
+                <div id="general" class="section">
+                    <h2>Cloud</h2>
+                    %if coords is None:
+                        <p>{{item_info['name']}} is not available in the Cloud.</p>
+                    %else:
+                        <p>The Cloud chest for {{item_info['name']}} is located on the {{coords[1]}}{{ordinal(coords[1])}} floor, in the {{'central' if coords[0] == 0 else '{}{}'.format(abs(coords[0]), ordinal(abs(coords[0])))}} corridor{{' to the left' if coords[0] > 0 else ' to the right' if coords[0] < 0 else ''}}. It is the {{coords[2] // 2 + 1}}{{ordinal(coords[2] // 2 + 1)}} chest on the {{'left' if coords[2] % 2 == 0 else 'right'}} wall.</p>
+                        %color, state_message = chest_state
+                        %if color is None:
+                            <p>{{state_message}}</p>
+                        %else:
+                            <p {{color_map[color]}}>{{state_message}}</p>
+                        %end
+                    %end
+                </div>
+            """, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=alltheitems.cloud.chest_state(coords, item_stub), color_map=color_map)
         # obtaining
         yield bottle.template("""
             %import json
