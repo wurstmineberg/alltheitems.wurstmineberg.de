@@ -1,10 +1,11 @@
 import alltheitems.__main__ as ati
 
 import api.v2
+import json
 import re
 import xml.sax.saxutils
 
-def data_type(plugin, string_id, *, items_data=None):
+def stub_data_type(plugin, string_id, *, items_data=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
@@ -116,7 +117,7 @@ def info_from_stub(item_stub, block=False):
     return item_info
 
 class Item:
-    def __init__(self, item_stub):
+    def __init__(self, item_stub, *, items_data=None):
         if isinstance(item_stub, str):
             self.stub = {'id': item_stub}
         elif isinstance(item_stub, dict):
@@ -134,6 +135,11 @@ class Item:
             'amount'
         }
         self.stub = {key: value for key, value in self.stub.items() if key in allowed_keys}
+        if items_data is None:
+            with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+                self.items_data = json.load(items_file)
+        else:
+            self.items_data = items_data
 
     def __eq__(self, other):
         if not isinstance(other, Item):
@@ -183,7 +189,7 @@ class Item:
     def from_slot(cls, slot, *, items_data=None):
         item_stub = {'id': slot['id']}
         plugin, string_id = slot['id'].split(':', 1)
-        data_type = data_type(plugin, string_id, items_data=items_data)
+        data_type = stub_data_type(plugin, string_id, items_data=items_data)
         if data_type is None:
             pass
         elif data_type == 'damage':
@@ -191,10 +197,7 @@ class Item:
         elif data_type == 'effect':
             item_stub['effect'] = slot['tag']['Potion']
         elif data_type == 'tagValue':
-            if items_data is None:
-                with (ati.assets_root / 'json' / 'items.json').open() as items_file:
-                    items_data = json.load(items_file)
-            tag_path = items_data[plugin][string_id]['tagPath']
+            tag_path = self.items_data[plugin][string_id]['tagPath']
             try:
                 tag = slot['tag']
                 for tag_path_elt in tag_path:
@@ -204,7 +207,7 @@ class Item:
                 item_stub['tagValue'] = None
         else:
             raise NotImplementedError('Unknown data type: {!r}'.format(data_type))
-        return cls(item_stub)
+        return cls(item_stub, items_data=items_data)
 
     def image(self, link=True, tooltip=True):
         return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=link, tooltip=tooltip)
@@ -246,11 +249,9 @@ class Item:
             raise NotImplementedError('match_slot with effect NYI')
         if 'tagValue' in self.stub:
             if 'tag' in slot:
-                with (ati.assets_root / 'json' / 'items.json').open() as items_file:
-                    items_data = json.load(items_file)
                 plugin, item_id = self.stub['id'].split(':', 1)
                 tag = slot['tag']
-                for tag_path_elt in items_data[plugin][item_id]['tagPath']:
+                for tag_path_elt in self.items_data[plugin][item_id]['tagPath']:
                     try:
                         tag = tag[tag_path_elt]
                     except (KeyError, IndexError):

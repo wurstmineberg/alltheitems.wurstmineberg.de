@@ -6,6 +6,7 @@ import itertools
 import json
 import pathlib
 import re
+import xml.sax.saxutils
 
 import alltheitems.item
 import alltheitems.world
@@ -97,8 +98,8 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
         item_name = item_stub['name']
         del item_stub['name']
     else:
-        item_name = alltheitems.item.Item(item_stub).info()['name']
-    item = alltheitems.item.Item(item_stub)
+        item_name = alltheitems.item.Item(item_stub, items_data=items_data).info()['name']
+    item = alltheitems.item.Item(item_stub, items_data=items_data)
     state = None, 'Fill level info coming <a href="http://wiki.{{host}}/Soon™">soon™</a>.'
     x, y, z = coords
     # determine the base coordinate, i.e. the position of the north half of the access chest
@@ -152,7 +153,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
             state = 'yellow', 'Sorting hopper does not exist, is {}.'.format(sorting_hopper['id'])
     else:
         for slot in sorting_hopper['tileEntity']['Items']:
-            if slot['Slot'] == 0 and stackable and not item.matches_slot(slot) and alltheitems.item.Item('minecraft:ender_pearl').matches_slot(slot):
+            if slot['Slot'] == 0 and stackable and not item.matches_slot(slot) and alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
                 if state[0] is None or state[0] == 'cyan':
                     state = 'yellow', 'Sorting hopper is full of Ender pearls, but the sorted item is stackable, so the first slot should contain the item.'
                 break
@@ -183,7 +184,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
         # error check: wrong items in access chest
         for slot in itertools.chain(north_half['tileEntity']['Items'], south_half['tileEntity']['Items']):
             if not item.matches_slot(slot):
-                return 'red', 'Access chest contains items of the wrong kind: {}.'.format(alltheitems.item.Item.from_slot(slot))
+                return 'red', 'Access chest contains items of the wrong kind: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data))
         # error check: wrong name on sign
         sign = block_at(base_x - 1 if z % 2 == 0 else base_x + 1, base_y + 1, base_z + 1, chunk_cache=chunk_cache)
         if sign['id'] != 'minecraft:wall_sign':
@@ -204,12 +205,12 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
         for slot in sorting_hopper['tileEntity']['Items']:
             empty_slots.remove(slot['Slot'])
             if slot['Slot'] == 0 and stackable:
-                if not item.matches_slot(slot) and not alltheitems.item.Item('minecraft:ender_pearl').matches_slot(slot):
-                    return 'red', 'Sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot))
+                if not item.matches_slot(slot) and not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
+                    return 'red', 'Sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data))
             else:
-                if not alltheitems.item.Item('minecraft:ender_pearl').matches_slot(slot):
-                    return 'red', 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot))
-            if alltheitems.item.Item('minecraft:ender_pearl').matches_slot(slot) and slot['Count'] > 1:
+                if not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
+                    return 'red', 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data))
+            if alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot) and slot['Count'] > 1:
                 return 'red', 'Too many Ender pearls in slot {}.'.format(slot['Slot'])
         if len(empty_slots) > 0:
             if len(empty_slots) == 5:
@@ -265,7 +266,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                             return 'red', 'Block at {} {} {} should be a chest, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         for slot in block['tileEntity']['Items']:
                             if not item.matches_slot(slot):
-                                return 'red', 'Storage chest at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot))
+                                return 'red', 'Storage chest at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data))
                     elif block_symbol == '<':
                         # hopper facing south
                         if block['id'] != 'minecraft:hopper':
@@ -421,7 +422,7 @@ def chest_background_color(coords, item_stub, *, items_data=None, chunk_cache=No
     }[color]
 
 def image_from_chest(coords, cloud_chest, *, chunk_cache=None, colors_to_explain=None):
-    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest).image())
+    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest, items_data=items_data).image())
 
 def index():
     yield ati.header(title='Cloud')
