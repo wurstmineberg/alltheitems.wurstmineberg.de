@@ -348,7 +348,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                             if known_facings[layer_x, layer_y, layer_z] != facing:
                                 return 'red', 'Repeater at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z)
                         else:
-                            return 'red', 'Direction check for repeater at {} {} {} not yet implemented.'.format(exact_x, exact_y, exact_z)
+                            return 'red', 'Direction check for repeater at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
                         known_delays = { # in game ticks
                             (2, -8, 1): 4,
                             (3, -8, 3): 2,
@@ -361,7 +361,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                             if known_delays[layer_x, layer_y, layer_z] != delay_ticks:
                                 return 'red', 'Repeater at {} {} {} has a delay of {} game tick{}, should be {}.'.format(exact_x, exact_y, exact_z, delay_ticks, '' if delay_ticks == 1 else 's', known_delays[layer_x, layer_y, layer_z])
                         else:
-                            return 'red', 'Delay check for repeater at {} {} {} not yet implemented.'.format(exact_x, exact_y, exact_z)
+                            return 'red', 'Delay check for repeater at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
                     elif block_symbol == 'S':
                         # stone top slab
                         if block['id'] != 'minecraft:stone_slab':
