@@ -337,11 +337,11 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         if block['id'] not in ('minecraft:unpowered_repeater', 'minecraft:powered_repeater'):
                             return 'red', 'Block at {} {} {} should be a repeater, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         known_facings = { # repeater facing is opposite its output direction
-                            (2, -8, 1): 0x2, # south
+                            (1, -8, 2): 0x2, # south
                             (3, -8, 3): 0x1 if z % 2 == 0 else 0x3, # east / west
-                            (2, -6, 6): 0x2, # south
-                            (5, -5, 7): 0x0, # north
-                            (1, -3, 3): 0x3 if z % 2 == 0 else 0x1 # west / east
+                            (6, -6, 2): 0x2, # south
+                            (7, -5, 5): 0x0, # north
+                            (3, -3, 1): 0x3 if z % 2 == 0 else 0x1 # west / east
                         }
                         facing = block['damage'] & 0x3
                         if (layer_x, layer_y, layer_z) in known_facings:
@@ -350,11 +350,11 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         else:
                             return 'red', 'Direction check for repeater at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
                         known_delays = { # in game ticks
-                            (2, -8, 1): 4,
+                            (1, -8, 2): 4,
                             (3, -8, 3): 2,
-                            (2, -6, 6): 2,
-                            (5, -5, 7): 2,
-                            (1, -3, 3): 2
+                            (6, -6, 2): 2,
+                            (7, -5, 5): 2,
+                            (3, -3, 1): 2
                         }
                         delay_ticks = 2 * (block['damage'] >> 2) + 2
                         if (layer_x, layer_y, layer_z) in known_delays:
