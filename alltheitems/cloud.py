@@ -336,8 +336,32 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # repeater
                         if block['id'] not in ('minecraft:unpowered_repeater', 'minecraft:powered_repeater'):
                             return 'red', 'Block at {} {} {} should be a repeater, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
-                        pass #TODO check delay
+                        known_facings = { # repeater facing is opposite its output direction
+                            (2, -8, 1): 0x2, # south
+                            (3, -8, 3): 0x1 if z % 2 == 0 else 0x3, # east / west
+                            (2, -6, 6): 0x2, # south
+                            (5, -5, 7): 0x0, # north
+                            (1, -3, 3): 0x3 if z % 2 == 0 else 0x1 # west / east
+                        }
+                        facing = block['data'] & 0x3
+                        if (layer_x, layer_y, layer_z) in known_facings:
+                            if known_facings[layer_x, layer_y, layer_z] != facing:
+                                return 'red', 'Repeater at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z)
+                        else:
+                            return 'red', 'Direction check for repeater at {} {} {} not yet implemented.'.format(exact_x, exact_y, exact_z)
+                        known_delays = { # in game ticks
+                            (2, -8, 1): 4,
+                            (3, -8, 3): 2,
+                            (2, -6, 6): 2,
+                            (5, -5, 7): 2,
+                            (1, -3, 3): 2
+                        }
+                        delay_ticks = 2 * (block['data'] >> 2) + 2
+                        if (layer_x, layer_y, layer_z) in known_delays:
+                            if known_delays[layer_x, layer_y, layer_z] != delay_ticks:
+                                return 'red', 'Repeater at {} {} {} has a delay of {} game tick{}, should be {}.'.format(exact_x, exact_y, exact_z, delay_ticks, '' if delay_ticks == 1 else 's', known_delays[layer_x, layer_y, layer_z])
+                        else:
+                            return 'red', 'Delay check for repeater at {} {} {} not yet implemented.'.format(exact_x, exact_y, exact_z)
                     elif block_symbol == 'S':
                         # stone top slab
                         if block['id'] != 'minecraft:stone_slab':
