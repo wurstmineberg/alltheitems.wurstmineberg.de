@@ -172,7 +172,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
     # state determined, check for errors
     if coords == (1, 1, 0): # Ender pearls
         # error check: input hopper chain
-        start = 15, 59, 30 # the last point where the Soup channel for the Cloud merges
+        start = 15, 61, 30 # the last point where the Soup channel for the Cloud merges
         end = -1, 25, 52 # the half of the uppermost overflow chest into which the hopper chain is pointing
         is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
         if not is_connected:
