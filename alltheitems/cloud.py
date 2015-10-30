@@ -336,12 +336,12 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # repeater
                         if block['id'] not in ('minecraft:unpowered_repeater', 'minecraft:powered_repeater'):
                             return 'red', 'Block at {} {} {} should be a repeater, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        known_facings = { # repeater facing is opposite its output direction
-                            (1, -8, 2): 0x2, # south
-                            (3, -8, 3): 0x1 if z % 2 == 0 else 0x3, # east / west
-                            (6, -6, 2): 0x2, # south
-                            (7, -5, 5): 0x0, # north
-                            (3, -3, 1): 0x3 if z % 2 == 0 else 0x1 # west / east
+                        known_facings = {
+                            (1, -8, 2): 0x0, # north
+                            (3, -8, 3): 0x3 if z % 2 == 0 else 0x1, # west / east
+                            (6, -6, 2): 0x0, # north
+                            (7, -5, 5): 0x2, # south
+                            (3, -3, 1): 0x1 if z % 2 == 0 else 0x3 # east / west
                         }
                         facing = block['damage'] & 0x3
                         if (layer_x, layer_y, layer_z) in known_facings:
