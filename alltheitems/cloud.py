@@ -343,7 +343,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                             (5, -5, 7): 0x0, # north
                             (1, -3, 3): 0x3 if z % 2 == 0 else 0x1 # west / east
                         }
-                        facing = block['data'] & 0x3
+                        facing = block['damage'] & 0x3
                         if (layer_x, layer_y, layer_z) in known_facings:
                             if known_facings[layer_x, layer_y, layer_z] != facing:
                                 return 'red', 'Repeater at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z)
@@ -356,7 +356,7 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                             (5, -5, 7): 2,
                             (1, -3, 3): 2
                         }
-                        delay_ticks = 2 * (block['data'] >> 2) + 2
+                        delay_ticks = 2 * (block['damage'] >> 2) + 2
                         if (layer_x, layer_y, layer_z) in known_delays:
                             if known_delays[layer_x, layer_y, layer_z] != delay_ticks:
                                 return 'red', 'Repeater at {} {} {} has a delay of {} game tick{}, should be {}.'.format(exact_x, exact_y, exact_z, delay_ticks, '' if delay_ticks == 1 else 's', known_delays[layer_x, layer_y, layer_z])
