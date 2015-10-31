@@ -87,7 +87,7 @@ def chest_coords(item):
         if item == chest:
             return x, y, z
 
-def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
+def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
@@ -313,6 +313,24 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         if layer_y == -6 and layer_x == 0 and z < 2:
                             # the first few chests get ignored because their overflow points in the opposite direction
                             pass #TODO introduce special checks for them
+                        elif layer_y == -1 and layer_x == 7 and layer_z == 1 and (z == corridor_length - 1 or z == corridor_length - 2 and z % 2 == 0):
+                            # the floor ends with a quartz slab instead of a furnace here
+                            if block['id'] != 'minecraft:stone_slab':
+                                return 'red', 'Block at {} {} {} should be a quartz slab, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            if block['damage'] & 0x7 != 0x7:
+                                slab_variant = {
+                                    0: 'stone',
+                                    1: 'sandstone',
+                                    2: 'fake wood',
+                                    3: 'cobblestone',
+                                    4: 'brick',
+                                    5: 'stone brick',
+                                    6: 'Nether brick',
+                                    7: 'quartz'
+                                }[block['damage'] & 0x7]
+                                return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
+                            if block['damage'] & 0x8 != 0x8:
+                                return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z)
                         else:
                             if block['id'] != 'minecraft:furnace':
                                 return 'red', 'Block at {} {} {} should be a furnace, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
@@ -330,8 +348,20 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # quartz top slab
                         if block['id'] != 'minecraft:stone_slab':
                             return 'red', 'Block at {} {} {} should be a quartz slab, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
-                        pass #TODO check material
+                        if block['damage'] & 0x7 != 0x7:
+                            slab_variant = {
+                                0: 'stone',
+                                1: 'sandstone',
+                                2: 'fake wood',
+                                3: 'cobblestone',
+                                4: 'brick',
+                                5: 'stone brick',
+                                6: 'Nether brick',
+                                7: 'quartz'
+                            }[block['damage'] & 0x7]
+                            return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
+                        if block['damage'] & 0x8 != 0x8:
+                            return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z)
                     elif block_symbol == 'R':
                         # repeater
                         if block['id'] not in ('minecraft:unpowered_repeater', 'minecraft:powered_repeater'):
@@ -366,13 +396,41 @@ def chest_state(coords, item_stub, *, items_data=None, block_at=alltheitems.worl
                         # stone top slab
                         if block['id'] != 'minecraft:stone_slab':
                             return 'red', 'Block at {} {} {} should be a stone slab, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
-                        pass #TODO check material
+                        if block['damage'] & 0x7 != 0x7:
+                            slab_variant = {
+                                0: 'stone',
+                                1: 'sandstone',
+                                2: 'fake wood',
+                                3: 'cobblestone',
+                                4: 'brick',
+                                5: 'stone brick',
+                                6: 'Nether brick',
+                                7: 'quartz'
+                            }[block['damage'] & 0x7]
+                            return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
+                        if block['damage'] & 0x8 != 0x8:
+                            return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z)
                     elif block_symbol == 'T':
                         # redstone torch attached to the side of a block
                         if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
                             return 'red', 'Block at {} {} {} should be a redstone torch, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         pass #TODO check facing
+                    elif block_symbol == 'W':
+                        # back wall
+                        if z == corridor_length - 1 or z == corridor_length - 2 and z % 2 == 0:
+                            if block['id'] != 'minecraft:stone':
+                                return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            if block['damage'] != 0:
+                                stone_variant = {
+                                    0: 'stone',
+                                    1: 'granite',
+                                    2: 'polished granite',
+                                    3: 'diorite',
+                                    4: 'polished diorite',
+                                    5: 'andesite',
+                                    6: 'polished andesite'
+                                }[block['damage']]
+                                return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant)
                     elif block_symbol == '^':
                         # hopper facing outward
                         if block['id'] != 'minecraft:hopper':
