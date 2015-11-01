@@ -586,12 +586,12 @@ def index():
                                     %end
                                     %corridor = floor[str(x)]
                                     %if len(corridor) > z_right:
-                                        {{!image((x, y, z_right), corridor[z_right])}}
+                                        {{!image((x, y, z_right), corridor[z_right], corridor)}}
                                     %else:
                                         <td></td>
                                     %end
                                     %if len(corridor) > z_left:
-                                        {{!image((x, y, z_left), corridor[z_left])}}
+                                        {{!image((x, y, z_left), corridor[z_left], corridor)}}
                                         %found = True
                                     %else:
                                         <td></td>
@@ -604,7 +604,7 @@ def index():
                         %end
                     </tbody>
                 </table>
-            """, ati=ati, image=lambda coords, item_stub: image_from_chest(coords, item_stub, len(corridor), chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data), floor=floor, y=y)
+            """, ati=ati, image=lambda coords, item_stub, corridor: image_from_chest(coords, item_stub, len(corridor), chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data), floor=floor, y=y)
         color_explanations = {
             'red': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
             'gray': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
