@@ -327,7 +327,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         mode = (block['damage'] & 0x4) == 0x4
                         if (layer_x, layer_y, layer_z) in known_modes:
                             if known_modes[layer_x, layer_y, layer_z] != mode:
-                                return 'red', 'Comparator at {} {} {} has is in {} mode, should be in {} mode.'.format(exact_x, exact_y, exact_z, 'subtraction' if mode else 'comparison', 'subtraction' if known_modes[layer_x, layer_y, layer_z] else 'comparison')
+                                return 'red', 'Comparator at {} {} {} is in {} mode, should be in {} mode.'.format(exact_x, exact_y, exact_z, 'subtraction' if mode else 'comparison', 'subtraction' if known_modes[layer_x, layer_y, layer_z] else 'comparison')
                         else:
                             return 'red', 'Mode check for comparator at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
                     elif block_symbol == 'D':
@@ -363,7 +363,25 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         else:
                             if block['id'] != 'minecraft:furnace':
                                 return 'red', 'Block at {} {} {} should be a furnace, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                            pass #TODO check signal
+                            known_signals = {
+                                (0, -6, 4): 0,
+                                (0, -6, 5): 0,
+                                (0, -6, 6): 0,
+                                (0, -6, 7): 0,
+                                (0, -1, 0): 8,
+                                (7, -1, 1): 0,
+                                (7, -1, 2): 0,
+                                (7, -1, 3): 0,
+                                (7, -1, 4): 0,
+                                (2, 0, 4): 1,
+                                (4, 0, 4): 5
+                            }
+                            signal = alltheitems.item.comparator_signal(block, items_data=items_data)
+                            if (layer_x, layer_y, layer_z) in known_signals:
+                                if known_signals[layer_x, layer_y, layer_z] != signal:
+                                    return 'red', 'Furnace at {} {} {} has a fill level of {}, should be {}.'.format(exact_x, exact_y, exact_z, signal, known_signals[layer_x, layer_y, layer_z])
+                            else:
+                                return 'red', 'Fill level check for furnace at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
                     elif block_symbol == 'G':
                         # glowstone
                         if block['id'] != 'minecraft:glowstone':
