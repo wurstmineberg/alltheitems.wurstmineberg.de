@@ -98,12 +98,12 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
         chunk_cache = {}
     if isinstance(item_stub, str):
         item_stub = {'id': item_stub}
+    item = alltheitems.item.Item(item_stub, items_data=items_data)
     if 'name' in item_stub:
         item_name = item_stub['name']
         del item_stub['name']
     else:
-        item_name = alltheitems.item.Item(item_stub, items_data=items_data).info()['name']
-    item = alltheitems.item.Item(item_stub, items_data=items_data)
+        item_name = item.info()['name']
     state = None, 'Fill level info coming <a href="http://wiki.{{host}}/Soon™">soon™</a>.'
     x, y, z = coords
     # determine the base coordinate, i.e. the position of the north half of the access chest
@@ -200,10 +200,10 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
             empty_slots.remove(slot['Slot'])
             if slot['Slot'] == 0 and stackable:
                 if not item.matches_slot(slot) and not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
-                    return 'red', 'Sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data))
+                    return 'red', 'Sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
             else:
                 if not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
-                    return 'red', 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data))
+                    return 'red', 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
             if alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot) and slot['Count'] > 1:
                 return 'red', 'Too many Ender pearls in slot {}.'.format(slot['Slot'])
         if len(empty_slots) > 0:
@@ -217,7 +217,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
         # error check: wrong items in access chest
         for slot in itertools.chain(north_half['tileEntity']['Items'], south_half['tileEntity']['Items']):
             if not item.matches_slot(slot):
-                return 'red', 'Access chest contains items of the wrong kind: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data))
+                return 'red', 'Access chest contains items of the wrong kind: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
         # error check: wrong name on sign
         sign = block_at(base_x - 1 if z % 2 == 0 else base_x + 1, base_y + 1, base_z + 1, chunk_cache=chunk_cache)
         if sign['id'] != 'minecraft:wall_sign':
@@ -277,7 +277,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                             return 'red', 'Block at {} {} {} should be a chest, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         for slot in block['tileEntity']['Items']:
                             if not item.matches_slot(slot):
-                                return 'red', 'Storage chest at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data))
+                                return 'red', 'Storage chest at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
                     elif block_symbol == '<':
                         # hopper facing south
                         if block['id'] != 'minecraft:hopper':
