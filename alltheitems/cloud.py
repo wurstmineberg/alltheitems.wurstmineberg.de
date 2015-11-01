@@ -191,23 +191,6 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                 return 'red', 'Overflow hopper at x={} does not exist, is {}.'.format(next(iter(missing_overflow_hoppers)), block_at(next(iter(missing_overflow_hoppers)), base_y - 7, base_z - 1)['id'])
             else:
                 return 'red', 'Missing overflow.'
-    if exists:
-        # error check: wrong items in access chest
-        for slot in itertools.chain(north_half['tileEntity']['Items'], south_half['tileEntity']['Items']):
-            if not item.matches_slot(slot):
-                return 'red', 'Access chest contains items of the wrong kind: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data))
-        # error check: wrong name on sign
-        sign = block_at(base_x - 1 if z % 2 == 0 else base_x + 1, base_y + 1, base_z + 1, chunk_cache=chunk_cache)
-        if sign['id'] != 'minecraft:wall_sign':
-            return 'red', 'Sign is missing.'
-        text = []
-        for line in range(1, 5):
-            line_text = json.loads(sign['tileEntity']['Text{}'.format(line)])['text'].translate(dict.fromkeys(range(0xf700, 0xf704), None))
-            if len(line_text) > 0:
-                text.append(line_text)
-        text = ' '.join(text)
-        if text != item_name:
-            return 'red', 'Sign has wrong text: should be {!r}, is {!r}.'.format(xml.sax.saxutils.escape(item_name), xml.sax.saxutils.escape(text))
     if has_sorter:
         # error check: sorting hopper
         if sorting_hopper['damage'] != 2:
@@ -230,6 +213,23 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                 return 'red', 'Slot {} of the sorting hopper is empty.'.format(next(iter(empty_slots)))
             else:
                 return 'red', 'Some slots in the sorting hopper are empty: {}.'.format(join(empty_slots))
+    if exists:
+        # error check: wrong items in access chest
+        for slot in itertools.chain(north_half['tileEntity']['Items'], south_half['tileEntity']['Items']):
+            if not item.matches_slot(slot):
+                return 'red', 'Access chest contains items of the wrong kind: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data))
+        # error check: wrong name on sign
+        sign = block_at(base_x - 1 if z % 2 == 0 else base_x + 1, base_y + 1, base_z + 1, chunk_cache=chunk_cache)
+        if sign['id'] != 'minecraft:wall_sign':
+            return 'red', 'Sign is missing.'
+        text = []
+        for line in range(1, 5):
+            line_text = json.loads(sign['tileEntity']['Text{}'.format(line)])['text'].translate(dict.fromkeys(range(0xf700, 0xf704), None))
+            if len(line_text) > 0:
+                text.append(line_text)
+        text = ' '.join(text)
+        if text != item_name:
+            return 'red', 'Sign has wrong text: should be {!r}, is {!r}.'.format(xml.sax.saxutils.escape(item_name), xml.sax.saxutils.escape(text))
     if has_overflow:
         # error check: overflow hopper chain
         start = base_x + 5 if z % 2 == 0 else base_x - 5, base_y - 7, base_z - 1
