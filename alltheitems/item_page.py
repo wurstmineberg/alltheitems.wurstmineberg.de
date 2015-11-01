@@ -150,7 +150,7 @@ def item_page(item_stub, block=False):
                 </div>
             """, host=ati.host) #TODO
         else:
-            coords = alltheitems.cloud.chest_coords(item_stub)
+            coords, corridor_length = alltheitems.cloud.chest_coords(item_stub, include_corridor_length=True)
             color_map = {
                 'cyan': 'class="text-info"',
                 'gray': 'class="muted"',
@@ -173,7 +173,7 @@ def item_page(item_stub, block=False):
                         %end
                     %end
                 </div>
-            """, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=alltheitems.cloud.chest_state(coords, item_stub), color_map=color_map)
+            """, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=alltheitems.cloud.chest_state(coords, item_stub, corridor_length), color_map=color_map)
         # obtaining
         yield bottle.template("""
             %import json

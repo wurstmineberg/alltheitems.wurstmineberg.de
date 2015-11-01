@@ -80,12 +80,15 @@ def chest_iter():
             for z, chest in enumerate(corridor):
                 yield x, corridor, y, floor, z, chest
 
-def chest_coords(item):
+def chest_coords(item, *, include_corridor_length=False):
     if not isinstance(item, alltheitems.item.Item):
         item = alltheitems.item.Item(item)
-    for x, _, y, _, z, chest in chest_iter():
+    for x, corridor, y, _, z, chest in chest_iter():
         if item == chest:
-            return x, y, z
+            if include_corridor_length:
+                return (x, y, z), len(corridor)
+            else:
+                return x, y, z
 
 def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
     if items_data is None:
@@ -396,7 +399,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         # stone top slab
                         if block['id'] != 'minecraft:stone_slab':
                             return 'red', 'Block at {} {} {} should be a stone slab, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        if block['damage'] & 0x7 != 0x7:
+                        if block['damage'] & 0x7 != 0x0:
                             slab_variant = {
                                 0: 'stone',
                                 1: 'sandstone',
@@ -407,7 +410,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                                 6: 'Nether brick',
                                 7: 'quartz'
                             }[block['damage'] & 0x7]
-                            return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
+                            return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/0">stone slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
                         if block['damage'] & 0x8 != 0x8:
                             return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z)
                     elif block_symbol == 'T':
@@ -514,8 +517,8 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         return 'red', 'Not yet implemented: block at {} {} {} should be {}.'.format(exact_x, exact_y, exact_z, block_symbol)
     return state
 
-def chest_background_color(coords, item_stub, *, items_data=None, chunk_cache=None, colors_to_explain=None):
-    color = chest_state(coords, item_stub, items_data=items_data, chunk_cache=chunk_cache)[0]
+def chest_background_color(coords, item_stub, corridor_length, *, items_data=None, chunk_cache=None, colors_to_explain=None):
+    color = chest_state(coords, item_stub, corridor_length, items_data=items_data, chunk_cache=chunk_cache)[0]
     if colors_to_explain is not None:
         colors_to_explain.add(color)
     return {
@@ -527,8 +530,8 @@ def chest_background_color(coords, item_stub, *, items_data=None, chunk_cache=No
         None: 'transparent'
     }[color]
 
-def image_from_chest(coords, cloud_chest, *, chunk_cache=None, items_data=None, colors_to_explain=None):
-    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest, items_data=items_data).image())
+def image_from_chest(coords, cloud_chest, corridor_length, *, chunk_cache=None, items_data=None, colors_to_explain=None):
+    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, corridor_length, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest, items_data=items_data).image())
 
 def index():
     yield ati.header(title='Cloud')
@@ -601,7 +604,7 @@ def index():
                         %end
                     </tbody>
                 </table>
-            """, ati=ati, image=lambda coords, item_stub: image_from_chest(coords, item_stub, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data), floor=floor, y=y)
+            """, ati=ati, image=lambda coords, item_stub: image_from_chest(coords, item_stub, len(corridor), chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data), floor=floor, y=y)
         color_explanations = {
             'red': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
             'gray': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
