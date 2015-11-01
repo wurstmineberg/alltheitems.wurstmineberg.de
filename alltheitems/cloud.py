@@ -335,6 +335,16 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         # glowstone
                         if block['id'] != 'minecraft:glowstone':
                             return 'red', 'Block at {} {} {} should be glowstone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                    elif block_symbol == 'N':
+                        # overflow hopper chain pointing down
+                        if z == 0 or z == 1:
+                            if block['id'] != 'minecraft:hopper':
+                                return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            if block['damage'] != 2: # north
+                                return 'red', 'Overflow hopper at {} {} {} should be pointing north, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
+                        else:
+                            if block['id'] != 'minecraft:air':
+                                return 'red', 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                     elif block_symbol == 'P':
                         # upside-down oak stairs
                         if block['id'] != 'minecraft:oak_stairs':
