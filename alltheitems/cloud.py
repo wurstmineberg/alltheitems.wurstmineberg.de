@@ -296,7 +296,40 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         # comparator
                         if block['id'] != 'minecraft:unpowered_comparator':
                             return 'red', 'Block at {} {} {} should be a comparator, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check direction and mode
+                        known_facings = {
+                            (5, -7, 2): 0x2, # south
+                            (5, -5, 2): 0x2, # south
+                            (7, -3, 4): 0x0, # north
+                            (0, -1, 1): 0x0, # north
+                            (1, -1, 2): 0x0, # north
+                            (2, 0, 2): 0x1 if z % 2 == 0 else 0x3, # east / west
+                            (2, 0, 3): 0x2, # south
+                            (4, 0, 2): 0x1 if z % 2 == 0 else 0x3, # east / west
+                            (4, 0, 3): 0x2 # south
+                        }
+                        facing = block['damage'] & 0x3
+                        if (layer_x, layer_y, layer_z) in known_facings:
+                            if known_facings[layer_x, layer_y, layer_z] != facing:
+                                return 'red', 'Comparator at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z)
+                        else:
+                            return 'red', 'Direction check for comparator at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
+                        known_modes = {
+                            (5, -7, 2): False, # compare
+                            (5, -5, 2): False, # compare
+                            (7, -3, 4): False, # compare
+                            (0, -1, 1): False, # compare
+                            (1, -1, 2): True, # subtract
+                            (2, 0, 2): True, # subtract
+                            (2, 0, 3): False, # compare
+                            (4, 0, 2): True, #subtract
+                            (4, 0, 3): False # compare
+                        }
+                        mode = (block['damage'] & 0x4) == 0x4
+                        if (layer_x, layer_y, layer_z) in known_modes:
+                            if known_modes[layer_x, layer_y, layer_z] != mode:
+                                return 'red', 'Comparator at {} {} {} has is in {} mode, should be in {} mode.'.format(exact_x, exact_y, exact_z, 'subtraction' if mode else 'comparison', 'subtraction' if known_modes[layer_x, layer_y, layer_z] else 'comparison')
+                        else:
+                            return 'red', 'Mode check for comparator at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
                     elif block_symbol == 'D':
                         # dropper facing up
                         if block['id'] != 'minecraft:dropper':
