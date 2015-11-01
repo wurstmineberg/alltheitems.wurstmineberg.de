@@ -337,7 +337,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                             return 'red', 'Block at {} {} {} should be glowstone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                     elif block_symbol == 'N':
                         # overflow hopper chain pointing down
-                        if z == 0 or z == 1:
+                        if y > 1 and (z == 0 or z == 1):
                             if block['id'] != 'minecraft:hopper':
                                 return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                             if block['damage'] != 2: # north
@@ -439,7 +439,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                                 return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant)
                     elif block_symbol == 'X':
                         # overflow hopper chain pointing down
-                        if layer_y < -7 and (z == 4 or z == 5) or layer_y > -7 and (z == 0 or z == 1):
+                        if layer_y < -7 and y < 6 and (z == 4 or z == 5) or layer_y > -7 and y > 1 and (z == 0 or z == 1):
                             if block['id'] != 'minecraft:hopper':
                                 return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                             if block['damage'] != 0: # down
