@@ -132,9 +132,9 @@ def item_page(item_stub, block=False):
         # tab bar
         yield """
             <ul id="pagination" class="nav nav-tabs">
-                <li><a id="tab-general" class="tab-item" href="#general">General</a></li>
-                <li><a id="tab-obtaining" class="tab-item" href="#obtaining">Obtaining</a></li>
-                <li><a id="tab-usage" class="tab-item" href="#usage">Usage</a></li>
+                <li><a id="tab-section-general" class="tab-item" href="#general">General</a></li>
+                <li><a id="tab-section-obtaining" class="tab-item" href="#obtaining">Obtaining</a></li>
+                <li><a id="tab-section-usage" class="tab-item" href="#usage">Usage</a></li>
             </ul>
             <style type="text/css">
                 .section p:first-child {
@@ -145,7 +145,7 @@ def item_page(item_stub, block=False):
         # general
         if block:
             yield bottle.template("""
-                <div id="general" class="section">
+                <div id="section-general" class="section">
                     <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
                 </div>
             """, host=ati.host) #TODO
@@ -159,7 +159,7 @@ def item_page(item_stub, block=False):
                 'yellow': 'class="text-warning"',
             }
             yield bottle.template("""
-                <div id="general" class="section">
+                <div id="section-general" class="section">
                     <h2>Cloud</h2>
                     %if coords is None:
                         <p>{{item_info['name']}} is not available in the Cloud.</p>
@@ -184,7 +184,7 @@ def item_page(item_stub, block=False):
                 %effect_plugin = None
                 %effect_id = None
             %end
-            <div id="obtaining" class="section hidden">
+            <div id="section-obtaining" class="section hidden">
                 %i = 0
                 %if block and 'itemID' in item_info:
                     %item = Item(item_stub).info()
@@ -240,7 +240,7 @@ def item_page(item_stub, block=False):
         """, Item=alltheitems.item.Item, Block=alltheitems.item.Block, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
         #TODO usage
         yield bottle.template("""
-            <div id="usage" class="section hidden">
+            <div id="section-usage" class="section hidden">
                 <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
             </div>
         """, host=ati.host)
