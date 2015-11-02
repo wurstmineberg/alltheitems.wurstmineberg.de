@@ -36,18 +36,18 @@ def hopper_chain_connected(start_coords, end_coords, *, world=None, chunk_cache=
         block = block_at(x, y, z, chunk_cache=chunk_cache)
         if block['id'] != 'minecraft:hopper':
             return False, 'block at {} {} {} is not a <a href="/block/minecraft/hopper">hopper</a>'.format(x, y, z, *end_coords)
-        if block['damage'] == 0:
+        if block['damage'] & 0x7 == 0:
             y -= 1 # down
-        elif block['damage'] == 2:
+        elif block['damage'] & 0x7 == 2:
             z -= 1 # north
-        elif block['damage'] == 3:
+        elif block['damage'] & 0x7 == 3:
             z += 1 # south
-        elif block['damage'] == 4:
+        elif block['damage'] & 0x7 == 4:
             x -= 1 # west
-        elif block['damage'] == 5:
+        elif block['damage'] & 0x7 == 5:
             x += 1 # east
         else:
-            raise ValueError('Unknown hopper facing {} at {}'.format(block['damage'], (x, y, z)))
+            raise ValueError('Unknown hopper facing {} at {}'.format(block['damage'] & 0x7, (x, y, z)))
     return True, None
 
 def smart_chest_schematic(document_root=ati.document_root):
