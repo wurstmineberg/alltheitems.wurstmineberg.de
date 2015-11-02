@@ -400,7 +400,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         # upside-down oak stairs
                         if block['id'] != 'minecraft:oak_stairs':
                             return 'red', 'Block at {} {} {} should be oak stairs, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        if block['damage'] & 0x3 != 0x0 if z % 2 == 0 else 0x1:
+                        if block['damage'] & 0x3 != (0x0 if z % 2 == 0 else 0x1):
                             stairs_facings = {
                                 0: 'east',
                                 1: 'west',
