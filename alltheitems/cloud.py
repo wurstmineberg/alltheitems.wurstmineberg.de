@@ -100,11 +100,13 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
         chunk_cache = {}
     if isinstance(item_stub, str):
         item_stub = {'id': item_stub}
-    item = alltheitems.item.Item(item_stub, items_data=items_data)
     if 'name' in item_stub:
         item_name = item_stub['name']
+        item_stub = item_stub.copy()
         del item_stub['name']
+        item = alltheitems.item.Item(item_stub, items_data=items_data)
     else:
+        item = alltheitems.item.Item(item_stub, items_data=items_data)
         item_name = item.info()['name']
     state = None, None
     x, y, z = coords
