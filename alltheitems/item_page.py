@@ -165,7 +165,7 @@ def item_page(item_stub, block=False):
                         <p>{{item_info['name']}} is not available in the Cloud.</p>
                     %else:
                         <p>The Cloud chest for {{item_info['name']}} is located on the {{coords[1]}}{{ordinal(coords[1])}} floor, in the {{'central' if coords[0] == 0 else '{}{}'.format(abs(coords[0]), ordinal(abs(coords[0])))}} corridor{{' to the left' if coords[0] > 0 else ' to the right' if coords[0] < 0 else ''}}. It is the {{coords[2] // 2 + 1}}{{ordinal(coords[2] // 2 + 1)}} chest on the {{'left' if coords[2] % 2 == 0 else 'right'}} wall.</p>
-                        %color, state_message = chest_state
+                        %color, state_message = chest_state()
                         %if color is None:
                             <p>{{!state_message}}</p>
                         %else:
@@ -173,7 +173,7 @@ def item_page(item_stub, block=False):
                         %end
                     %end
                 </div>
-            """, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=alltheitems.cloud.chest_state(coords, item_stub, corridor_length), color_map=color_map)
+            """, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=lambda: alltheitems.cloud.chest_state(coords, item_stub, corridor_length), color_map=color_map)
         # obtaining
         yield bottle.template("""
             %import json
