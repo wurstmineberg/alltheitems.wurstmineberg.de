@@ -343,7 +343,9 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                             return 'red', 'Block at {} {} {} should be a dropper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         if block['damage'] & 0x7 != 1: # up
                             return 'red', 'Dropper at {} {} {} should be facing up, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
-                        pass #TODO check contents
+                        for slot in block['tileEntity']['Items']:
+                            if not item.matches_slot(slot):
+                                return 'red', 'Dropper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
                     elif block_symbol == 'F':
                         # furnace
                         if layer_y == -6 and layer_x == 0 and z < 2:
