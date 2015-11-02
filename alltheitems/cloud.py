@@ -89,6 +89,8 @@ def chest_coords(item, *, include_corridor_length=False):
                 return (x, y, z), len(corridor)
             else:
                 return x, y, z
+    if include_corridor_length:
+        return None, 0
 
 def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
     if items_data is None:
