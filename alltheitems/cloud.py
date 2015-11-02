@@ -400,7 +400,16 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         # upside-down oak stairs
                         if block['id'] != 'minecraft:oak_stairs':
                             return 'red', 'Block at {} {} {} should be oak stairs, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        if block['damage'] & 0x3 != 0x0 if z % 2 == 0 else 0x1:
+                            stairs_facings = {
+                                0: 'east',
+                                1: 'west',
+                                2: 'south',
+                                3: 'north'
+                            }
+                            return 'red', 'Stairs at {} {} {} should be facing {}, is {}.'.format(exact_x, exact_y, exact_z, stairs_facings[0x0 if z % 2 else 0x1], stairs_facings[block['damage'] & 0x3])
+                        if block['damage'] & 0x4 != 0x4:
+                            return 'red', 'Stairs at {} {} {} should be upside-down.'.format(exact_x, exact_y, exact_z)
                     elif block_symbol == 'Q':
                         # quartz top slab
                         if block['id'] != 'minecraft:stone_slab':
@@ -466,7 +475,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                             }[block['damage'] & 0x7]
                             return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/0">stone slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
                         if block['damage'] & 0x8 != 0x8:
-                            return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z)
+                            return 'red', 'Quartz slab at {} {} {} should be a top slab.'.format(exact_x, exact_y, exact_z)
                     elif block_symbol == 'T':
                         # redstone torch attached to the side of a block
                         if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
