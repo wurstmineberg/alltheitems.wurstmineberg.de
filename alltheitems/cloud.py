@@ -104,7 +104,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
         del item_stub['name']
     else:
         item_name = item.info()['name']
-    state = None, 'Fill level info coming <a href="http://wiki.{{host}}/Soon™">soon™</a>.'
+    state = None, None
     x, y, z = coords
     # determine the base coordinate, i.e. the position of the north half of the access chest
     if z % 2 == 0:
@@ -115,6 +115,18 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
         base_x = 15 * x - 3
     base_y = 73 - 10 * y
     base_z = 28 + 10 * y + 4 * (z // 2)
+
+    def layer_coords(layer_x, layer_y, layer_z):
+        if z % 2 == 0:
+            # left wall
+            exact_x = base_x + 5 - layer_x
+        else:
+            # right wall
+            exact_x = base_x - 5 + layer_x
+        exact_y = base_y + layer_y
+        exact_z = base_z + 3 - layer_z
+        return exact_x, exact_y, exact_z
+
     # does the access chest exist?
     exists = False
     north_half = block_at(base_x, base_y, base_z, chunk_cache=chunk_cache)
@@ -243,14 +255,7 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
             for layer_x, row in enumerate(layer):
                 for layer_z, block_symbol in enumerate(row):
                     # determine the coordinate of the current block
-                    if z % 2 == 0:
-                        # left wall
-                        exact_x = base_x + 5 - layer_x
-                    else:
-                        # right wall
-                        exact_x = base_x - 5 + layer_x
-                    exact_y = base_y + layer_y
-                    exact_z = base_z + 3 - layer_z
+                    exact_x, exact_y, exact_z = layer_coords(layer_x, layer_y, layer_z)
                     # determine current block
                     block = block_at(exact_x, exact_y, exact_z, chunk_cache=chunk_cache)
                     # check against schematic
@@ -588,6 +593,42 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
                         pass #TODO check hopper chain integrity
                     else:
                         return 'red', 'Not yet implemented: block at {} {} {} should be {}.'.format(exact_x, exact_y, exact_z, block_symbol)
+    if state[0] is None or state[0] == 'cyan':
+        containers = [ # layer coords of all counted container blocks in the SmartChest
+            (3, -7, 3),
+            (3, -7, 4),
+            (4, -7, 4),
+            (5, -7, 3),
+            (5, -7, 4),
+            (2, -6, 3),
+            (3, -6, 2),
+            (3, -6, 3),
+            (2, -5, 2),
+            (2, -5, 3),
+            (3, -5, 3),
+            (2, -4, 3),
+            (3, -4, 2),
+            (3, -4, 3),
+            (3, -3, 2),
+            (4, -3, 2),
+            (5, -3, 2),
+            (6, -3, 2),
+            (5, -2, 2),
+            (6, -2, 2),
+            (5, -1, 2),
+            (5, 0, 2),
+            (5, 0, 3)
+        ]
+        stack_size = item.max_stack_size()
+        max_slots = sum(alltheitems.item.NUM_SLOTS[block_at(*layer_coords(*container), chunk_cache=chunk_cache)['id']] for container in containers)
+        max_items = max_slots * stack_size
+        total_items = sum(sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']) for container in containers)
+        if total_items == 0:
+            return state[0], 'SmartChest is empty'
+        elif total_items == max_items:
+            return state[0], 'SmartChest is full'
+        else:
+            return state[0], 'SmartChest is filled {}% ({} {stack}{}{} out of {} {stack}s).'.format(int(100 * total_items / max_items), total_items // stack_size, '' if total_items // stack_size == 1 else 's', ' and {} item{}'.format(total_items % stack_size, '' if total_items % stack_size == 1 else 's') if total_items % stack_size > 0 else '', max_slots, stack='item' if stack_size == 1 else 'stack')
     return state
 
 def chest_background_color(coords, item_stub, corridor_length, *, items_data=None, chunk_cache=None, colors_to_explain=None):

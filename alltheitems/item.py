@@ -5,32 +5,30 @@ import json
 import re
 import xml.sax.saxutils
 
+NUM_SLOTS = {
+    'minecraft:furnace': 3,
+    'minecraft:lit_furnace': 3,
+    'minecraft:hopper': 5,
+    'minecraft:brewing_stand': 5,
+    'minecraft:dispenser': 9,
+    'minecraft:dropper': 9,
+    'minecraft:chest': 27,
+    'minecraft:trapped_chest': 27
+}
+
 def comparator_signal(block, *, items_data=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
-    num_slots = {
-        'minecraft:furnace': 3,
-        'minecraft:lit_furnace': 3,
-        'minecraft:hopper': 5,
-        'minecraft:brewing_stand': 5,
-        'minecraft:dispenser': 9,
-        'minecraft:dropper': 9,
-        'minecraft:chest': 27, #TODO double chests
-        'minecraft:trapped_chest': 27 #TODO double chests
-    }
-    if block['id'] in num_slots:
+    if block['id'] in NUM_SLOTS:
         def fullness(slot):
             item = Item.from_slot(slot, items_data=items_data)
-            max_stack_size = item.info().get('stackable', True)
-            if isinstance(max_stack_size, bool):
-                max_stack_size = 64 if max_stack_size else 1
-            return slot['Count'] / max_stack_size
+            return slot['Count'] / item.max_stack_size()
 
         inventory = block['tileEntity']['Items']
         if sum(item['Count'] for item in inventory) == 0:
             return 0
-        return int(1 + 14 * sum(map(fullness, inventory)) / num_slots[block['id']])
+        return int(1 + 14 * sum(map(fullness, inventory)) / NUM_SLOTS[block['id']])
     elif block['id'] == 'minecraft:cake':
         return 14 - 2 * block['damage']
     elif block['id'] == 'minecraft:cauldron':
@@ -58,7 +56,7 @@ def comparator_signal(block, *, items_data=None):
         }
         return record_signals[block['tileEntity']['RecordItem']['id']]
     else:
-        raise NotImplementedError('Comparator signal for {} NYI'.format(block['id'])) #TODO detector rail, item frame
+        raise NotImplementedError('Comparator signal for {} NYI'.format(block['id'])) #TODO double chest, detector rail, item frame
 
 def stub_data_type(plugin, string_id, *, items_data=None):
     if items_data is None:
@@ -317,6 +315,12 @@ class Item:
                 if self.stub['tagValue'] is not None:
                     return False
         return True
+
+    def max_stack_size(self):
+        result = self.info().get('stackable', True)
+        if isinstance(result, bool):
+            result = 64 if result else 1
+        return result
 
 class Block(Item):
     @classmethod
