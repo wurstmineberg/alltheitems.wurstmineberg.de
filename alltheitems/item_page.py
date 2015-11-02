@@ -162,9 +162,9 @@ def item_page(item_stub, block=False):
                 <div id="section-general" class="section">
                     <h2>Cloud</h2>
                     %if coords is None:
-                        <p>{{item_info['name']}} is not available in the Cloud.</p>
+                        <p>{{item_info['name']}} is not available in the <a href="/cloud">Cloud</a>.</p>
                     %else:
-                        <p>The Cloud chest for {{item_info['name']}} is located on the {{coords[1]}}{{ordinal(coords[1])}} floor, in the {{'central' if coords[0] == 0 else '{}{}'.format(abs(coords[0]), ordinal(abs(coords[0])))}} corridor{{' to the left' if coords[0] > 0 else ' to the right' if coords[0] < 0 else ''}}. It is the {{coords[2] // 2 + 1}}{{ordinal(coords[2] // 2 + 1)}} chest on the {{'left' if coords[2] % 2 == 0 else 'right'}} wall.</p>
+                        <p>The <a href="/cloud">Cloud</a> chest for {{item_info['name']}} is located on the {{coords[1]}}{{ordinal(coords[1])}} floor, in the {{'central' if coords[0] == 0 else '{}{}'.format(abs(coords[0]), ordinal(abs(coords[0])))}} corridor{{' to the left' if coords[0] > 0 else ' to the right' if coords[0] < 0 else ''}}. It is the {{coords[2] // 2 + 1}}{{ordinal(coords[2] // 2 + 1)}} chest on the {{'left' if coords[2] % 2 == 0 else 'right'}} wall.</p>
                         %color, state_message = chest_state()
                         %if color is None:
                             <p>{{!state_message}}</p>
@@ -172,8 +172,10 @@ def item_page(item_stub, block=False):
                             <p {{!color_map[color]}}>{{!state_message}}</p>
                         %end
                     %end
+                    <h2>Latency-induced Atomic Genesis</h2>
+                    <p><a href="http://wiki.{{host}}/Latency-induced_Atomic_Genesis">LAG</a> legality info coming <a href="http://wiki.{{host}}/Soon™">soon™</a>.</p>
                 </div>
-            """, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=lambda: alltheitems.cloud.chest_state(coords, item_stub, corridor_length), color_map=color_map)
+            """, host=ati.host, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=lambda: alltheitems.cloud.chest_state(coords, item_stub, corridor_length), color_map=color_map) #TODO LAG info
         # obtaining
         yield bottle.template("""
             %import json
