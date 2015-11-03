@@ -80,19 +80,19 @@ def chest_iter():
             for z, chest in enumerate(corridor):
                 yield x, corridor, y, floor, z, chest
 
-def chest_coords(item, *, include_corridor_length=False):
+def chest_coords(item, *, include_meta=False):
     if not isinstance(item, alltheitems.item.Item):
         item = alltheitems.item.Item(item)
     for x, corridor, y, _, z, chest in chest_iter():
         if item == chest:
-            if include_corridor_length:
-                return (x, y, z), len(corridor)
+            if include_meta:
+                return (x, y, z), len(corridor), None if isinstance(chest, str) else chest.get('name')
             else:
                 return x, y, z
-    if include_corridor_length:
-        return None, 0
+    if include_meta:
+        return None, 0, None
 
-def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
+def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
@@ -100,13 +100,8 @@ def chest_state(coords, item_stub, corridor_length, *, items_data=None, block_at
         chunk_cache = {}
     if isinstance(item_stub, str):
         item_stub = {'id': item_stub}
-    if 'name' in item_stub:
-        item_name = item_stub['name']
-        item_stub = item_stub.copy()
-        del item_stub['name']
-        item = alltheitems.item.Item(item_stub, items_data=items_data)
-    else:
-        item = alltheitems.item.Item(item_stub, items_data=items_data)
+    item = alltheitems.item.Item(item_stub, items_data=items_data)
+    if item_name is None:
         item_name = item.info()['name']
     state = None, None
     x, y, z = coords
@@ -677,6 +672,18 @@ def index():
             if y not in floors:
                 floors[y] = floor
         for y, floor in sorted(floors.items(), key=lambda tup: tup[0]):
+            def image(coords, item_stub, corridor):
+                if isinstance(item_stub, str):
+                    item_stub = {'id': item_stub}
+                    item_name = None
+                elif 'name' in item_stub:
+                    item_name = item_stub['name']
+                    item_stub = item_stub.copy()
+                    del item_stub['name']
+                else:
+                    item_name = None
+                return image_from_chest(coords, item_stub, len(corridor), item_name=item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data)
+
             yield bottle.template("""
                 %import itertools
                 <h2 id="floor{{y}}">{{y}}{{ati.ordinal(y)}} floor (y={{73 - 10 * y}})</h2>
@@ -724,7 +731,7 @@ def index():
                         %end
                     </tbody>
                 </table>
-            """, ati=ati, image=lambda coords, item_stub, corridor: image_from_chest(coords, item_stub, len(corridor), chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data), floor=floor, y=y)
+            """, ati=ati, image=image, floor=floor, y=y)
         color_explanations = {
             'red': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
             'gray': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
