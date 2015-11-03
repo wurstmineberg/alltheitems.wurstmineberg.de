@@ -632,8 +632,8 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             return state[0], 'SmartChest is filled {}% ({} {stack}{}{} out of {} {stack}s).'.format(int(100 * total_items / max_items), total_items // stack_size, '' if total_items // stack_size == 1 else 's', ' and {} item{}'.format(total_items % stack_size, '' if total_items % stack_size == 1 else 's') if total_items % stack_size > 0 else '', max_slots, stack='item' if stack_size == 1 else 'stack')
     return state
 
-def chest_background_color(coords, item_stub, corridor_length, *, items_data=None, chunk_cache=None, colors_to_explain=None):
-    color = chest_state(coords, item_stub, corridor_length, items_data=items_data, chunk_cache=chunk_cache)[0]
+def chest_background_color(coords, item_stub, corridor_length, item_name=None, *, items_data=None, chunk_cache=None, colors_to_explain=None):
+    color = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)[0]
     if colors_to_explain is not None:
         colors_to_explain.add(color)
     return {
@@ -645,8 +645,8 @@ def chest_background_color(coords, item_stub, corridor_length, *, items_data=Non
         None: 'transparent'
     }[color]
 
-def image_from_chest(coords, cloud_chest, corridor_length, *, chunk_cache=None, items_data=None, colors_to_explain=None):
-    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, corridor_length, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest, items_data=items_data).image())
+def image_from_chest(coords, cloud_chest, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None):
+    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, corridor_length, item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest, items_data=items_data).image())
 
 def index():
     yield ati.header(title='Cloud')
@@ -682,7 +682,7 @@ def index():
                     del item_stub['name']
                 else:
                     item_name = None
-                return image_from_chest(coords, item_stub, len(corridor), item_name=item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data)
+                return image_from_chest(coords, item_stub, len(corridor), item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data)
 
             yield bottle.template("""
                 %import itertools
