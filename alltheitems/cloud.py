@@ -11,6 +11,39 @@ import xml.sax.saxutils
 import alltheitems.item
 import alltheitems.world
 
+class FillLevel:
+    def __init__(self, stack_size, total_items, max_slots):
+        self.stack_size = stack_size
+        self.total_items = total_items
+        self.max_slots = max_slots
+
+    def __str__(self):
+        if self.total_items == 0:
+            return 'SmartChest is empty'
+        elif self.total_items == self.max_items:
+            return 'SmartChest is full'
+        else:
+            stacks, items = self.stacks
+            return 'SmartChest is filled {}% ({} {stack}{}{} out of {} {stack}s).'.format(int(100 * self.fraction), stacks, '' if stacks == 1 else 's', ' and {} item{}'.format(items, '' if items == 1 else 's') if items > 0 else '', self.max_slots, stack='item' if self.stack_size == 1 else 'stack')
+
+    @property
+    def fraction(self):
+        return self.total_items / self.max_items
+
+    def is_empty(self):
+        return self.total_items == 0
+
+    def is_full(self):
+        return self.total_items == self.max_items
+
+    @property
+    def max_items(self):
+        return self.max_slots * self.stack_size
+
+    @property
+    def stacks(self):
+        return divmod(self.total_items, self.stack_size)
+
 HOPPER_FACINGS = {
     0: 'down',
     1: 'up', #for droppers
@@ -18,6 +51,15 @@ HOPPER_FACINGS = {
     3: 'south',
     4: 'west',
     5: 'east'
+}
+
+HTML_COLORS = {
+    'cyan': '#0ff',
+    'gray': '#777',
+    'red': '#f00',
+    'orange': '#f70',
+    'yellow': '#ff0',
+    None: 'transparent'
 }
 
 def hopper_chain_connected(start_coords, end_coords, *, world=None, chunk_cache=None, block_at=None):
@@ -620,33 +662,16 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             (5, 0, 2),
             (5, 0, 3)
         ]
-        stack_size = item.max_stack_size()
-        max_slots = sum(alltheitems.item.NUM_SLOTS[block_at(*layer_coords(*container), chunk_cache=chunk_cache)['id']] for container in containers)
-        max_items = max_slots * stack_size
         total_items = sum(sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']) for container in containers)
-        if total_items == 0:
-            return state[0], 'SmartChest is empty'
-        elif total_items == max_items:
-            return state[0], 'SmartChest is full'
-        else:
-            return state[0], 'SmartChest is filled {}% ({} {stack}{}{} out of {} {stack}s).'.format(int(100 * total_items / max_items), total_items // stack_size, '' if total_items // stack_size == 1 else 's', ' and {} item{}'.format(total_items % stack_size, '' if total_items % stack_size == 1 else 's') if total_items % stack_size > 0 else '', max_slots, stack='item' if stack_size == 1 else 'stack')
+        max_slots = sum(alltheitems.item.NUM_SLOTS[block_at(*layer_coords(*container), chunk_cache=chunk_cache)['id']] for container in containers)
+        return state[0], FillLevel(item.max_stack_size(), total_items, max_slots)
     return state
 
-def chest_background_color(coords, item_stub, corridor_length, item_name=None, *, items_data=None, chunk_cache=None, colors_to_explain=None):
-    color = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)[0]
+def cell_from_chest(coords, cloud_chest, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None):
     if colors_to_explain is not None:
         colors_to_explain.add(color)
-    return {
-        'cyan': '#0ff',
-        'gray': '#777',
-        'red': '#f00',
-        'orange': '#f70',
-        'yellow': '#ff0',
-        None: 'transparent'
-    }[color]
-
-def image_from_chest(coords, cloud_chest, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None):
-    return '<td style="background-color: {};">{}</td>'.format(chest_background_color(coords, cloud_chest, corridor_length, item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain), alltheitems.item.Item(cloud_chest, items_data=items_data).image())
+    color, state_message = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
+    return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(cloud_chest, items_data=items_data).image()) #TODO show fill level on hover
 
 def index():
     yield ati.header(title='Cloud')
@@ -672,7 +697,7 @@ def index():
             if y not in floors:
                 floors[y] = floor
         for y, floor in sorted(floors.items(), key=lambda tup: tup[0]):
-            def image(coords, item_stub, corridor):
+            def cell(coords, item_stub, corridor):
                 if isinstance(item_stub, str):
                     item_stub = {'id': item_stub}
                     item_name = None
@@ -682,7 +707,7 @@ def index():
                     del item_stub['name']
                 else:
                     item_name = None
-                return image_from_chest(coords, item_stub, len(corridor), item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data)
+                return cell_from_chest(coords, item_stub, len(corridor), item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data)
 
             yield bottle.template("""
                 %import itertools
@@ -713,12 +738,12 @@ def index():
                                     %end
                                     %corridor = floor[str(x)]
                                     %if len(corridor) > z_right:
-                                        {{!image((x, y, z_right), corridor[z_right], corridor)}}
+                                        {{!cell((x, y, z_right), corridor[z_right], corridor)}}
                                     %else:
                                         <td></td>
                                     %end
                                     %if len(corridor) > z_left:
-                                        {{!image((x, y, z_left), corridor[z_left], corridor)}}
+                                        {{!cell((x, y, z_left), corridor[z_left], corridor)}}
                                         %found = True
                                     %else:
                                         <td></td>
@@ -731,7 +756,7 @@ def index():
                         %end
                     </tbody>
                 </table>
-            """, ati=ati, image=image, floor=floor, y=y)
+            """, ati=ati, cell=cell, floor=floor, y=y)
         color_explanations = {
             'red': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
             'gray': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
