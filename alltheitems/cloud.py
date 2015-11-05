@@ -807,34 +807,31 @@ def todo():
         for x, corridor, y, _, z, item_stub in chest_iter():
             if isinstance(item_stub, str):
                 item_stub = {'id': item_stub}
-                item_name = None
             elif 'name' in item_stub:
-                item_name = item_stub['name']
                 item_stub = item_stub.copy()
                 del item_stub['name']
-            else:
-                item_name = None
             color, state_message = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
             if not isinstance(state_message, FillLevel) or not state_message.is_full():
-                states[x, y, z] = color, state_message, item_name
+                states[x, y, z] = color, state_message, alltheitems.item.Item(item_stub, items_data=items_data)
         for coords, state in sorted(states.items(), key=priority):
             x, y, z = coords
-            color, state_message, item_name = state
+            color, state_message, item = state
             if color != current_color:
                 if current_color is not None:
                     yield '</tbody></table>'
                 yield bottle.template('<h2 id="{{color}}">{{header}}</h2>', color='white' if color is None else color, header=headers[color])
-                yield '<table><thead><tr><th>X</th><th>Y</th><th>Z</th><th>Item</th><th>{}</th></tr></thead><tbody>'.format('Fill Level' if color is None or color == 'cyan' else 'Info')
+                yield '<table class="table table-responsive"><thead><tr><th>X</th><th>Y</th><th>Z</th><th>&nbsp;</th><th>Item</th><th>{}</th></tr></thead><tbody>'.format('Fill Level' if color is None or color == 'cyan' else 'Info')
                 current_color = color
             yield bottle.template("""
                 <tr>
                     <td>{{x}}</td>
                     <td>{{y}}</td>
                     <td>{{z}}</td>
-                    <td>{{item_name}}</td>
+                    <td>{{!item.image()}}</td>
+                    <td>{{!item.link_text()}}</td>
                     <td style="background-color: {{color}}">{{state_message}}</td>
                 </tr>
-            """, x=x, y=y, z=z, item_name=item_name, color=HTML_COLORS[color], state_message=state_message)
+            """, x=x, y=y, z=z, item=item, color=HTML_COLORS[color], state_message=state_message)
         yield '</tbody></table>'
     yield from ati.html_exceptions(body())
     yield ati.footer(linkify_headers=True)
