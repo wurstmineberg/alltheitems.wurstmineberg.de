@@ -667,7 +667,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         return state[0], FillLevel(item.max_stack_size(), total_items, max_slots)
     return state
 
-def cell_from_chest(coords, cloud_chest, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None):
+def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None):
     color, state_message = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
     if colors_to_explain is not None:
         colors_to_explain.add(color)
