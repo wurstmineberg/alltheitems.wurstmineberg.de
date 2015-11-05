@@ -220,6 +220,12 @@ def cloud_index():
     import alltheitems.cloud
     return alltheitems.cloud.index()
 
+@application.route('/cloud/todo')
+def cloud_todo():
+    """A page listing Cloud chests which are incomplete or not full, by priority."""
+    import alltheitems.cloud
+    return alltheitems.cloud.todo()
+
 @application.route('/block/<plugin>/<block_id>')
 def show_block_by_id(plugin, block_id):
     """A page with detailed information about the block with the given ID."""

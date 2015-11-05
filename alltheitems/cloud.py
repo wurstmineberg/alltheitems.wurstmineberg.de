@@ -1,6 +1,7 @@
 import alltheitems.__main__ as ati
 
 import bottle
+import collections
 import contextlib
 import itertools
 import json
@@ -765,18 +766,73 @@ def index():
                     </tbody>
                 </table>
             """, ati=ati, cell=cell, floor=floor, y=y)
-        color_explanations = {
-            'red': '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>',
-            'gray': "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>",
-            'orange': "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>",
-            'cyan': '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>',
-            'yellow': "<p>A yellow background means that the chest doesn't have a sorter yet.</p>",
-            None: '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>'
-        }
+        color_explanations = collections.OrderedDict([
+            ('red', '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>'),
+            ('gray', "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>"),
+            ('orange', "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>"),
+            ('yellow', "<p>A yellow background means that the chest doesn't have a sorter yet.</p>"),
+            ('cyan', '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>'),
+            (None, '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>)'
+        ])
         for chest_color in colors_to_explain:
-            if chest_color is not None:
+            if chest_color is not None or len(colors_to_explain) > 1:
                 yield color_explanations[chest_color]
-        if None in colors_to_explain and len(colors_to_explain) > 1:
-            yield color_explanations[None]
+    yield from ati.html_exceptions(body())
+    yield ati.footer(linkify_headers=True)
+
+def todo():
+    yield ati.header(title='Cloud by priority')
+    def body():
+        headers = collections.OrderedDict([
+            ('red', 'Build errors'),
+            ('gray', 'Missing chests'),
+            ('orange', 'Missing SmartChests'),
+            ('yellow', 'Missing sorters'),
+            ('cyan', 'Missing items (unstackable)'),
+            (None, 'Missing items (stackable)')
+        ])
+        header_indexes = {color: i for i, color in enumerate(headers.keys)}
+
+        def priority(pair):
+            coords, state = pair
+            x, y, z = coords
+            color, state_message = state
+            return header_indexes[color], state_message.fraction if isinstance(state_message, FillLevel) else None, y, z * (-1 ** y), x
+
+        chunk_cache = {}
+        with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+            items_data = json.load(items_file)
+        states = {}
+        current_color = None
+        for x, corridor, y, _, z, item_stub in chest_iter():
+            if isinstance(item_stub, str):
+                item_stub = {'id': item_stub}
+                item_name = None
+            elif 'name' in item_stub:
+                item_name = item_stub['name']
+                item_stub = item_stub.copy()
+                del item_stub['name']
+            else:
+                item_name = None
+            states[x, y, z] = chest_state(coords, item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
+        for coords, state in sorted(states, key=priority):
+            x, y, z = coords
+            color, state_message = state
+            if color != current_color:
+                if current_color is not None:
+                    yield '</tbody></table>'
+                yield bottle.template('<h2 id="{{color}}">{{header}}</h2>', color='white' if color is None else color, header=headers[color])
+                yield '<table><thead><tr><th>X</th><th>Y</th><th>Z</th><th>Item</th><th>{}</th></tr></thead><tbody>'.format('Fill Level' if color is None or color == 'cyan' else 'Info')
+                current_color = color
+            yield bottle.template("""
+                <tr>
+                    <td>{{x}}</td>
+                    <td>{{y}}</td>
+                    <td>{{z}}</td>
+                    <td>{{item_name}}</td>
+                    <td style="background-color: {{color}}">{{state_message}}</td>
+                </tr>
+            """, x=x, y=y, z=z, item_name=item_name, color=HTML_COLORS[color], state_message=state_message)
+        yield '</tbody></table>'
     yield from ati.html_exceptions(body())
     yield ati.footer(linkify_headers=True)
