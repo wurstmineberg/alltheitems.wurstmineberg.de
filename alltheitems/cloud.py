@@ -807,9 +807,13 @@ def todo():
         for x, corridor, y, _, z, item_stub in chest_iter():
             if isinstance(item_stub, str):
                 item_stub = {'id': item_stub}
+                item_name = None
             elif 'name' in item_stub:
+                item_name = item_stub['name']
                 item_stub = item_stub.copy()
                 del item_stub['name']
+            else:
+                item_name = None
             color, state_message = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
             if not isinstance(state_message, FillLevel) or not state_message.is_full():
                 states[x, y, z] = color, state_message, alltheitems.item.Item(item_stub, items_data=items_data)
