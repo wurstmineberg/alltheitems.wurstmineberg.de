@@ -691,6 +691,10 @@ def index():
             .item-table .left-sep {
                 border-left: 1px solid gray;
             }
+
+            .durability {
+                z-index: 1;
+            }
         </style>"""
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
