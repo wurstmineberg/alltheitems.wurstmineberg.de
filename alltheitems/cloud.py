@@ -815,7 +815,7 @@ def todo():
             else:
                 item_name = None
             states[x, y, z] = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
-        for coords, state in sorted(states, key=priority):
+        for coords, state in sorted(states.items(), key=priority):
             x, y, z = coords
             color, state_message = state
             if color != current_color:
