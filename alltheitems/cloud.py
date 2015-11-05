@@ -886,7 +886,6 @@ def todo():
                 current_color = color
             yield bottle.template("""
                 <tr>
-                    <!-- {{priority}} #DEBUG -->
                     <td class="coord">{{x}}</td>
                     <td class="coord">{{y}}</td>
                     <td class="coord">{{z}}</td>
@@ -894,7 +893,7 @@ def todo():
                     <td class="item-name">{{!item.link_text()}}</td>
                     <td style="background-color: {{color}}">{{!state_message}}</td>
                 </tr>
-            """, priority=priority((coords, state)), x=x, y=y, z=z, item=item, color=HTML_COLORS[color], state_message=state_message)
+            """, x=x, y=y, z=z, item=item, color=HTML_COLORS[color], state_message=state_message)
         yield '</tbody></table>'
     yield from ati.html_exceptions(body())
     yield ati.footer(linkify_headers=True)
