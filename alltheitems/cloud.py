@@ -20,9 +20,9 @@ class FillLevel:
 
     def __str__(self):
         if self.total_items == 0:
-            return 'SmartChest is empty'
+            return 'SmartChest is empty.'
         elif self.total_items == self.max_items:
-            return 'SmartChest is full'
+            return 'SmartChest is full.'
         else:
             stacks, items = self.stacks
             return 'SmartChest is filled {}% ({} {stack}{}{} out of {} {stack}s).'.format(int(100 * self.fraction), stacks, '' if stacks == 1 else 's', ' and {} item{}'.format(items, '' if items == 1 else 's') if items > 0 else '', self.max_slots, stack='item' if self.stack_size == 1 else 'stack')
