@@ -671,7 +671,10 @@ def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk
     color, state_message = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
     if colors_to_explain is not None:
         colors_to_explain.add(color)
-    return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image()) #TODO show fill level on hover
+    if isinstance(state_message, FillLevel):
+        return '<td style="background-color: {};">{}<div class="durability"><div style="background-color: white; width: {}px;"></div></div></td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image(), int(state_message.fraction * 14) * 2)
+    else:
+        return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image())
 
 def index():
     yield ati.header(title='Cloud')
@@ -682,6 +685,7 @@ def index():
                 box-sizing: content-box;
                 height: 32px;
                 width: 32px;
+                position: relative;
             }
 
             .item-table .left-sep {
