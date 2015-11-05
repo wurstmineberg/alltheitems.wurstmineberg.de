@@ -783,6 +783,26 @@ def index():
 def todo():
     yield ati.header(title='Cloud by priority')
     def body():
+        yield """<style type="text/css">
+            .todo-table td {
+                text-align: left;
+                vertical-align: middle;
+            }
+
+            .todo-table .coord {
+                width: 3em;
+            }
+
+            .todo-table .item-image {
+                box-sizing: content-box;
+                width: 32px;
+            }
+
+            .todo-table .item-name {
+                width: 24em;
+            }
+        </style>"""
+
         headers = collections.OrderedDict([
             ('red', 'Build errors'),
             ('gray', 'Missing chests'),
@@ -824,15 +844,15 @@ def todo():
                 if current_color is not None:
                     yield '</tbody></table>'
                 yield bottle.template('<h2 id="{{color}}">{{header}}</h2>', color='white' if color is None else color, header=headers[color])
-                yield '<table class="table table-responsive"><thead><tr><th>X</th><th>Y</th><th>Z</th><th>&nbsp;</th><th>Item</th><th>{}</th></tr></thead><tbody>'.format('Fill Level' if color is None or color == 'cyan' else 'Info')
+                yield '<table class="todo-table table table-responsive"><thead><tr><th class="coord">X</th><th class="coord">Y</th><th class="coord">Z</th><th class="item-image">&nbsp;</th><th class="item-name">Item</th><th>{}</th></tr></thead><tbody>'.format('Fill Level' if color is None or color == 'cyan' else 'Info')
                 current_color = color
             yield bottle.template("""
                 <tr>
-                    <td>{{x}}</td>
-                    <td>{{y}}</td>
-                    <td>{{z}}</td>
-                    <td>{{!item.image()}}</td>
-                    <td>{{!item.link_text()}}</td>
+                    <td class="coord">{{x}}</td>
+                    <td class="coord">{{y}}</td>
+                    <td class="coord">{{z}}</td>
+                    <td class="item-image">{{!item.image()}}</td>
+                    <td class="item-name">{{!item.link_text()}}</td>
                     <td style="background-color: {{color}}">{{state_message}}</td>
                 </tr>
             """, x=x, y=y, z=z, item=item, color=HTML_COLORS[color], state_message=state_message)
