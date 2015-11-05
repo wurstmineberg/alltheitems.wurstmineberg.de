@@ -818,7 +818,7 @@ def todo():
             coords, state = pair
             x, y, z = coords
             color, state_message, item_name = state
-            return header_indexes[color], state_message.fraction if isinstance(state_message, FillLevel) else None, y * (-1 if color == 'orange' else 1), x * (-1 ** y), z
+            return header_indexes[color], state_message.fraction if isinstance(state_message, FillLevel) else None, y * (-1 if color == 'orange' else 1), -x * (-1 ** y), z
 
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
