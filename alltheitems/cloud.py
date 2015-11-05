@@ -693,12 +693,7 @@ def index():
             }
 
             .durability {
-                display: none;
                 z-index: 1;
-            }
-
-            td:hover .durability {
-                display: block;
             }
         </style>"""
         chunk_cache = {}
