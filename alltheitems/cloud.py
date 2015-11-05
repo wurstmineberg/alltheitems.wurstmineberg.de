@@ -791,6 +791,7 @@ def todo():
 
             .todo-table .coord {
                 width: 3em;
+                text-align: right;
             }
 
             .todo-table .item-image {
