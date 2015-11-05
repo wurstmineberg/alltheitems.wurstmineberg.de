@@ -791,7 +791,7 @@ def todo():
             ('cyan', 'Missing items (unstackable)'),
             (None, 'Missing items (stackable)')
         ])
-        header_indexes = {color: i for i, color in enumerate(headers.keys)}
+        header_indexes = {color: i for i, color in enumerate(headers.keys())}
 
         def priority(pair):
             coords, state = pair
