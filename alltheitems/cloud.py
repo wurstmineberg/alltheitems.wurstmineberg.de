@@ -854,7 +854,7 @@ def todo():
                     <td class="coord">{{z}}</td>
                     <td class="item-image">{{!item.image()}}</td>
                     <td class="item-name">{{!item.link_text()}}</td>
-                    <td style="background-color: {{color}}">{{state_message}}</td>
+                    <td style="background-color: {{color}}">{{!state_message}}</td>
                 </tr>
             """, x=x, y=y, z=z, item=item, color=HTML_COLORS[color], state_message=state_message)
         yield '</tbody></table>'
