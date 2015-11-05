@@ -671,7 +671,7 @@ def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk
     color, state_message = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
     if colors_to_explain is not None:
         colors_to_explain.add(color)
-    return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(cloud_chest, items_data=items_data).image()) #TODO show fill level on hover
+    return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image()) #TODO show fill level on hover
 
 def index():
     yield ati.header(title='Cloud')
