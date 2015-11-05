@@ -796,7 +796,7 @@ def todo():
         def priority(pair):
             coords, state = pair
             x, y, z = coords
-            color, state_message = state
+            color, state_message, item_name = state
             return header_indexes[color], state_message.fraction if isinstance(state_message, FillLevel) else None, y, z * (-1 ** y), x
 
         chunk_cache = {}
@@ -816,10 +816,10 @@ def todo():
                 item_name = None
             color, state_message = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
             if not isinstance(state_message, FillLevel) or not state_message.is_full():
-                states[x, y, z] = color, state_message
+                states[x, y, z] = color, state_message, item_name
         for coords, state in sorted(states.items(), key=priority):
             x, y, z = coords
-            color, state_message = state
+            color, state_message, item_name = state
             if color != current_color:
                 if current_color is not None:
                     yield '</tbody></table>'
