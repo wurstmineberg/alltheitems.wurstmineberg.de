@@ -809,9 +809,9 @@ def index():
             ('orange', "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>"),
             ('yellow', "<p>A yellow background means that the chest doesn't have a sorter yet.</p>"),
             ('cyan', '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>'),
-            (None, '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>)')
+            (None, '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>')
         ])
-        for chest_color in colors_to_explain:
+        for chest_color in sorted(colors_to_explain, key=list(color_explanations.keys()).index):
             if chest_color is not None or len(colors_to_explain) > 1:
                 yield color_explanations[chest_color]
     yield from ati.html_exceptions(body())
