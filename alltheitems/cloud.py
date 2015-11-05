@@ -786,7 +786,7 @@ def todo():
         yield """<style type="text/css">
             .todo-table td {
                 text-align: left;
-                vertical-align: middle;
+                vertical-align: middle !important;
             }
 
             .todo-table .coord {
