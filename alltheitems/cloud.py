@@ -324,7 +324,14 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         if block['damage'] & 0x7 != 3: # south
                             return 'red', 'Hopper at {} {} {} should be pointing south, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
-                        pass #TODO check contents
+                        storage_hoppers = {
+                            (5, -7, 4),
+                            (6, -5, 4)
+                        }
+                        if (layer_x, layer_y, layer_z) in storage_hoppers:
+                            for slot in block['tileEntity']['Items']:
+                                if not item.matches_slot(slot):
+                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
                     elif block_symbol == '>':
                         # hopper facing north
                         if layer_y == -7 and layer_x == 0 and z < 8:
@@ -335,7 +342,14 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                 return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                             if block['damage'] & 0x7 != 2: # north
                                 return 'red', 'Hopper at {} {} {} should be pointing north, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
-                            pass #TODO check contents
+                            storage_hoppers = {
+                                (3, -7, 3),
+                                (3, -4, 2)
+                            }
+                            if (layer_x, layer_y, layer_z) in storage_hoppers:
+                                for slot in block['tileEntity']['Items']:
+                                    if not item.matches_slot(slot):
+                                        return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
                     elif block_symbol == '?':
                         # any block
                         pass
@@ -562,7 +576,16 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         if block['damage'] & 0x7 != (5 if z % 2 == 0 else 4): # east / west
                             return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'east' if z % 2 == 0 else 'west', HOPPER_FACINGS[block['damage']])
-                        pass #TODO check contents
+                        storage_hoppers = {
+                            (3, -5, 3),
+                            (6, -5, 3),
+                            (5, -3, 2),
+                            (6, -3, 2)
+                        }
+                        if (layer_x, layer_y, layer_z) in storage_hoppers:
+                            for slot in block['tileEntity']['Items']:
+                                if not item.matches_slot(slot):
+                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
                     elif block_symbol == 'c':
                         # crafting table
                         if layer_y == -7 and (z < 4 or z < 6 and layer_z > 1):
@@ -617,14 +640,28 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         if block['damage'] & 0x7 != (4 if z % 2 == 0 else 5): # west / east
                             return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'west' if z % 2 == 0 else 'east', HOPPER_FACINGS[block['damage']])
-                        pass #TODO check contents
+                        storage_hoppers = {
+                            (3, -7, 4),
+                            (4, -7, 4),
+                            (2, -6, 3)
+                        }
+                        if (layer_x, layer_y, layer_z) in storage_hoppers:
+                            for slot in block['tileEntity']['Items']:
+                                if not item.matches_slot(slot):
+                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
                     elif block_symbol == 'x':
                         # hopper facing down
                         if block['id'] != 'minecraft:hopper':
                             return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                         if block['damage'] & 0x7 != 0: # down
                             return 'red', 'Hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
-                        pass #TODO check contents
+                        storage_hoppers = {
+                            (5, -1, 2)
+                        }
+                        if (layer_x, layer_y, layer_z) in storage_hoppers:
+                            for slot in block['tileEntity']['Items']:
+                                if not item.matches_slot(slot):
+                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
                     elif block_symbol == '~':
                         # hopper chain
                         if block['id'] == 'minecraft:hopper':
