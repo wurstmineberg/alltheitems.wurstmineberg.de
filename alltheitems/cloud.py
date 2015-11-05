@@ -668,9 +668,9 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
     return state
 
 def cell_from_chest(coords, cloud_chest, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None):
+    color, state_message = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
     if colors_to_explain is not None:
         colors_to_explain.add(color)
-    color, state_message = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
     return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(cloud_chest, items_data=items_data).image()) #TODO show fill level on hover
 
 def index():
