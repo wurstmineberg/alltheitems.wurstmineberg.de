@@ -40,16 +40,6 @@ class FillLevel:
     def max_items(self):
         return self.max_slots * self.stack_size
 
-    def short_str(self):
-        if self.is_empty():
-            return 'empty'
-        elif self.is_full():
-            return 'full'
-        elif self.stack_size == 1:
-            return '{}% ({}/{max})'.format(int(100 * self.fraction), self.total_items, max=self.max_slots)
-        else:
-            return '{}% ({}s{}/{max}s)'.format(int(100 * self.fraction), *self.stacks, max=self.max_slots)
-
     @property
     def stacks(self):
         return divmod(self.total_items, self.stack_size)
@@ -682,7 +672,7 @@ def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk
     if colors_to_explain is not None:
         colors_to_explain.add(color)
     if isinstance(state_message, FillLevel):
-        return '<td style="background-color: {};" title="{}">{}<div class="durability"><div style="background-color: white; width: {}px;"></div></div></td>'.format(HTML_COLORS[color], state_message.short_str(), alltheitems.item.Item(item_stub, items_data=items_data).image(), int(state_message.fraction * 14) * 2)
+        return '<td style="background-color: {};">{}<div class="durability"><div style="background-color: white; width: {}px;"></div></div></td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image(), int(state_message.fraction * 14) * 2)
     else:
         return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image())
 
