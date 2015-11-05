@@ -814,7 +814,7 @@ def todo():
                 del item_stub['name']
             else:
                 item_name = None
-            states[x, y, z] = chest_state(coords, item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
+            states[x, y, z] = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
         for coords, state in sorted(states, key=priority):
             x, y, z = coords
             color, state_message = state
