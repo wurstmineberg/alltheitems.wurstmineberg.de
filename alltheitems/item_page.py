@@ -248,6 +248,6 @@ def item_page(item_stub, block=False):
         """, host=ati.host)
     yield from ati.html_exceptions(body())
     yield ati.footer(additional_js="""
-        selectTabWithID("tab-general");
+        selectTabWithID("tab-section-general");
         bindTabEvents();
     """)
