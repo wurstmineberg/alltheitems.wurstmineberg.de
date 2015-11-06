@@ -710,7 +710,7 @@ def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk
     if colors_to_explain is not None:
         colors_to_explain.add(color)
     if isinstance(state_message, FillLevel) and not state_message.is_full():
-        return '<td>{}<div class="durability"><div style="background-color: #f0f; width: {}px;"></div></div></td>'.format(alltheitems.item.Item(item_stub, items_data=items_data).image(), int(state_message.fraction * 14) * 2)
+        return '<td>{}<div class="durability"><div style="background-color: #f0f; width: {}px;"></div></div></td>'.format(alltheitems.item.Item(item_stub, items_data=items_data).image(), 0 if state_message.is_empty() else 2 + int(state_message.fraction * 13) * 2)
     else:
         return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image())
 
