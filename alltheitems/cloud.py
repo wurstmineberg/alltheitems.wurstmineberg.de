@@ -54,6 +54,14 @@ HOPPER_FACINGS = {
     5: 'east'
 }
 
+TORCH_FACINGS = {
+    1: 'to its west',
+    2: 'to its east',
+    3: 'to its north',
+    4: 'to its south',
+    5: 'below'
+}
+
 HTML_COLORS = {
     'cyan': '#0ff',
     'gray': '#777',
@@ -547,7 +555,25 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         # redstone torch attached to the side of a block
                         if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
                             return 'red', 'Block at {} {} {} should be a redstone torch, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        known_facings = {
+                            (3, -8, 1): 1 if z % 2 == 0 else 2, # west / east
+                            (2, -7, 1): 3, # north
+                            (4, -6, 1): 2 if z % 2 == 0 else 1, # east / west
+                            (4, -6, 2): 3, # north
+                            (4, -5, 1): 1 if z % 2 == 0 else 2, # west / east
+                            (4, -5, 3): 4, # south
+                            (7, -5, 3): 3, # north
+                            (1, -4, 2): 4, # south
+                            (1, -3, 3): 3, # north
+                            (1, -1, 4): 4, # south
+                            (5, -1, 1): 2 if z % 2 == 0 else 1, # east / west
+                            (3, 0, 3): 4 # south
+                        }
+                        if (layer_x, layer_y, layer_z) in known_facings:
+                            if known_facings[layer_x, layer_y, layer_z] != block['damage']:
+                                return 'red', 'Redstone torch at {} {} {} attached to the block {}, should be attached to the block {}.'.format(exact_x, exact_y, exact_z, TORCH_FACINGS[block['damage']], TORCH_FACINGS[known_facings[layer_x, layer_y, layer_z]])
+                        else:
+                            return 'red', 'Facing check for redstone torch at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
                     elif block_symbol == 'W':
                         # back wall
                         if z == corridor_length - 1 or z == corridor_length - 2 and z % 2 == 0:
@@ -640,7 +666,8 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         # redstone torch attached to the top of a block
                         if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
                             return 'red', 'Block at {} {} {} should be a redstone torch, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        if block['damage'] != 5: # attached to the block below
+                            return 'red', 'Redstone torch at {} {} {} should be attached to the block below, is attached to the block {}'.format(exact_x, exact_y, exact_z, TORCH_FACINGS[block['damage']])
                     elif block_symbol == 'v':
                         # hopper facing inwards
                         if block['id'] != 'minecraft:hopper':
