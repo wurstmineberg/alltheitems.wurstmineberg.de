@@ -157,6 +157,7 @@ def item_page(item_stub, block=False):
                 'red': 'class="text-danger"',
                 'orange': 'style="color: #bc714d;"',
                 'yellow': 'class="text-warning"',
+                None: ''
             }
             yield bottle.template("""
                 <div id="section-general" class="section">
@@ -165,11 +166,10 @@ def item_page(item_stub, block=False):
                         <p>{{item_info['name']}} is not available in the <a href="/cloud">Cloud</a>.</p>
                     %else:
                         <p>The <a href="/cloud">Cloud</a> chest for {{item_info['name']}} is located on the {{coords[1]}}{{ordinal(coords[1])}} floor, in the {{'central' if coords[0] == 0 else '{}{}'.format(abs(coords[0]), ordinal(abs(coords[0])))}} corridor{{' to the left' if coords[0] > 0 else ' to the right' if coords[0] < 0 else ''}}. It is the {{coords[2] // 2 + 1}}{{ordinal(coords[2] // 2 + 1)}} chest on the {{'left' if coords[2] % 2 == 0 else 'right'}} wall.</p>
-                        %color, state_message = chest_state()
-                        %if color is None:
-                            <p>{{!state_message}}</p>
-                        %else:
-                            <p {{!color_map[color]}}>{{!state_message}}</p>
+                        %color, state_message, fill_level = chest_state()
+                        <p {{!color_map[color]}}>{{!state_message}}</p>
+                        %if fill_level is not None:
+                            <p {{!color_map[color]}}>{{fill_level}}</p>
                         %end
                     %end
                     <h2>Latency-induced Atomic Genesis</h2>

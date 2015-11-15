@@ -13,19 +13,20 @@ import alltheitems.item
 import alltheitems.world
 
 class FillLevel:
-    def __init__(self, stack_size, total_items, max_slots):
+    def __init__(self, stack_size, total_items, max_slots, *, is_smart_chest=True):
         self.stack_size = stack_size
         self.total_items = total_items
         self.max_slots = max_slots
+        self.is_smart_chest = is_smart_chest
 
     def __str__(self):
         if self.total_items == 0:
-            return 'SmartChest is empty.'
+            return '{} is empty.'.format('SmartChest' if self.is_smart_chest else 'Chest')
         elif self.total_items == self.max_items:
-            return 'SmartChest is full.'
+            return '{} is full.'.format('SmartChest' if self.is_smart_chest else 'Chest')
         else:
             stacks, items = self.stacks
-            return 'SmartChest is filled {}% ({} {stack}{}{} out of {} {stack}s).'.format(int(100 * self.fraction), stacks, '' if stacks == 1 else 's', ' and {} item{}'.format(items, '' if items == 1 else 's') if items > 0 else '', self.max_slots, stack='item' if self.stack_size == 1 else 'stack')
+            return '{} is filled {}% ({} {stack}{}{} out of {} {stack}s).'.format('SmartChest' if self.is_smart_chest else 'Chest', int(100 * self.fraction), stacks, '' if stacks == 1 else 's', ' and {} item{}'.format(items, '' if items == 1 else 's') if items > 0 else '', self.max_slots, stack='item' if self.stack_size == 1 else 'stack')
 
     @property
     def fraction(self):
@@ -154,7 +155,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
     item = alltheitems.item.Item(item_stub, items_data=items_data)
     if item_name is None:
         item_name = item.info()['name']
-    state = None, None
+    state = None, 'This SmartChest is in perfect state.', None
     x, y, z = coords
     # determine the base coordinate, i.e. the position of the north half of the access chest
     if z % 2 == 0:
@@ -182,11 +183,11 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
     north_half = block_at(base_x, base_y, base_z, chunk_cache=chunk_cache)
     south_half = block_at(base_x, base_y, base_z + 1, chunk_cache=chunk_cache)
     if north_half['id'] != 'minecraft:chest' and south_half['id'] != 'minecraft:chest':
-        state = 'gray', 'Access chest does not exist.'
+        state = 'gray', 'Access chest does not exist.', None
     elif north_half['id'] != 'minecraft:chest':
-        state = 'gray', 'North half of access chest does not exist.'
+        state = 'gray', 'North half of access chest does not exist.', None
     elif south_half['id'] != 'minecraft:chest':
-        state = 'gray', 'South half of access chest does not exist.'
+        state = 'gray', 'South half of access chest does not exist.', None
     else:
         exists = True
     # does it have a SmartChest?
@@ -198,30 +199,30 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             missing_droppers.add(dropper_y)
     if len(missing_droppers) == 7:
         if state[0] is None:
-            state = 'orange', 'SmartChest droppers do not exist.'
+            state = 'orange', 'SmartChest droppers do not exist.', None
     elif len(missing_droppers) > 1:
         if state[0] is None:
-            state = 'orange', 'SmartChest droppers at y={} do not exist.'.format(missing_droppers)
+            state = 'orange', 'SmartChest droppers at y={} do not exist.'.format(missing_droppers), None
     elif len(missing_droppers) == 1:
         if state[0] is None:
-            state = 'orange', 'SmartChest dropper at y={} does not exist, is {}.'.format(next(iter(missing_droppers)), block_at(base_x, dropper_y, base_z)['id'])
+            state = 'orange', 'SmartChest dropper at y={} does not exist, is {}.'.format(next(iter(missing_droppers)), block_at(base_x, dropper_y, base_z)['id']), None
     else:
         has_smart_chest = True
     # is it stackable?
     stackable = item.info().get('stackable', True)
     if not stackable and state[0] is None:
-        state = 'cyan', state[1]
+        state = 'cyan', "This SmartChest is in perfect state (but the item is not stackable, so it can't be sorted).", None
     # does it have a sorter?
     has_sorter = False
     sorting_hopper = block_at(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, chunk_cache=chunk_cache)
     if sorting_hopper['id'] != 'minecraft:hopper':
         if state[0] is None:
-            state = 'yellow', 'Sorting hopper does not exist, is {}.'.format(sorting_hopper['id'])
+            state = 'yellow', 'Sorting hopper does not exist, is {}.'.format(sorting_hopper['id']), None
     else:
         for slot in sorting_hopper['tileEntity']['Items']:
             if slot['Slot'] == 0 and stackable and not item.matches_slot(slot) and alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
                 if state[0] is None or state[0] == 'cyan':
-                    state = 'yellow', 'Sorting hopper is full of Ender pearls, but the sorted item is stackable, so the first slot should contain the item.'
+                    state = 'yellow', 'Sorting hopper is full of Ender pearls, but the sorted item is stackable, so the first slot should contain the item.', None
                 break
         else:
             has_sorter = True
@@ -241,49 +242,49 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         end = -1, 25, 52 # the half of the uppermost overflow chest into which the hopper chain is pointing
         is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
         if not is_connected:
-            return 'red', 'Input hopper chain at {} is not connected to the unsorted overflow at {}: {}.'.format(start, end, message)
+            return 'red', 'Input hopper chain at {} is not connected to the unsorted overflow at {}: {}.'.format(start, end, message), None
     if stackable and has_sorter:
         # error check: overflow exists
         if not has_overflow:
             if len(missing_overflow_hoppers) == 3:
-                return 'red', 'Missing overflow hoppers.'
+                return 'red', 'Missing overflow hoppers.', None
             elif len(missing_overflow_hoppers) > 1:
-                return 'red', 'Overflow hoppers at x={} do not exist.'.format(missing_overflow_hoppers)
+                return 'red', 'Overflow hoppers at x={} do not exist.'.format(missing_overflow_hoppers), None
             elif len(missing_overflow_hoppers) == 1:
-                return 'red', 'Overflow hopper at x={} does not exist, is {}.'.format(next(iter(missing_overflow_hoppers)), block_at(next(iter(missing_overflow_hoppers)), base_y - 7, base_z - 1)['id'])
+                return 'red', 'Overflow hopper at x={} does not exist, is {}.'.format(next(iter(missing_overflow_hoppers)), block_at(next(iter(missing_overflow_hoppers)), base_y - 7, base_z - 1)['id']), None
             else:
-                return 'red', 'Missing overflow.'
+                return 'red', 'Missing overflow.', None
     if has_sorter:
         # error check: sorting hopper
         if sorting_hopper['damage'] != 2:
-            return 'red', 'Sorting hopper ({} {} {}) should be pointing north, but is facing {}.'.format(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, HOPPER_FACINGS[sorting_hopper['damage']], sorting_hopper['damage'])
+            return 'red', 'Sorting hopper ({} {} {}) should be pointing north, but is facing {}.'.format(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, HOPPER_FACINGS[sorting_hopper['damage']], sorting_hopper['damage']), None
         empty_slots = set(range(5))
         for slot in sorting_hopper['tileEntity']['Items']:
             empty_slots.remove(slot['Slot'])
             if slot['Slot'] == 0 and stackable:
                 if not item.matches_slot(slot) and not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
-                    return 'red', 'Sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                    return 'red', 'Sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
             else:
                 if not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
-                    return 'red', 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                    return 'red', 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
             if alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot) and slot['Count'] > 1:
-                return 'red', 'Too many Ender pearls in slot {}.'.format(slot['Slot'])
+                return 'red', 'Too many Ender pearls in slot {}.'.format(slot['Slot']), None
         if len(empty_slots) > 0:
             if len(empty_slots) == 5:
-                return 'red', 'Sorting hopper is empty.'
+                return 'red', 'Sorting hopper is empty.', None
             elif len(empty_slots) == 1:
-                return 'red', 'Slot {} of the sorting hopper is empty.'.format(next(iter(empty_slots)))
+                return 'red', 'Slot {} of the sorting hopper is empty.'.format(next(iter(empty_slots))), None
             else:
-                return 'red', 'Some slots in the sorting hopper are empty: {}.'.format(join(empty_slots))
+                return 'red', 'Some slots in the sorting hopper are empty: {}.'.format(join(empty_slots)), None
     if exists:
         # error check: wrong items in access chest
         for slot in itertools.chain(north_half['tileEntity']['Items'], south_half['tileEntity']['Items']):
             if not item.matches_slot(slot):
-                return 'red', 'Access chest contains items of the wrong kind: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                return 'red', 'Access chest contains items of the wrong kind: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
         # error check: wrong name on sign
         sign = block_at(base_x - 1 if z % 2 == 0 else base_x + 1, base_y + 1, base_z + 1, chunk_cache=chunk_cache)
         if sign['id'] != 'minecraft:wall_sign':
-            return 'red', 'Sign is missing.'
+            return 'red', 'Sign is missing.', None
         text = []
         for line in range(1, 5):
             line_text = json.loads(sign['tileEntity']['Text{}'.format(line)])['text'].translate(dict.fromkeys(range(0xf700, 0xf704), None))
@@ -291,14 +292,14 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                 text.append(line_text)
         text = ' '.join(text)
         if text != item_name:
-            return 'red', 'Sign has wrong text: should be {!r}, is {!r}.'.format(xml.sax.saxutils.escape(item_name), xml.sax.saxutils.escape(text))
+            return 'red', 'Sign has wrong text: should be {!r}, is {!r}.'.format(xml.sax.saxutils.escape(item_name), xml.sax.saxutils.escape(text)), None
     if has_overflow:
         # error check: overflow hopper chain
         start = base_x + 5 if z % 2 == 0 else base_x - 5, base_y - 7, base_z - 1
         end = -35, 6, 38 # position of the dropper leading into the Smelting Center's item elevator
         is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
         if not is_connected:
-            return 'red', 'Overflow hopper chain at {} is not connected to the Smelting Center item elevator at {}: {}.'.format(start, end, message)
+            return 'red', 'Overflow hopper chain at {} is not connected to the Smelting Center item elevator at {}: {}.'.format(start, end, message), None
     if exists and has_smart_chest and has_sorter and has_overflow:
         # error check: all blocks
         for layer_y, layer in smart_chest_schematic(document_root=document_root):
@@ -312,26 +313,26 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                     if block_symbol == ' ':
                         # air
                         if block['id'] != 'minecraft:air':
-                            return 'red', 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                     elif block_symbol == '!':
                         # sign
                         if block['id'] != 'minecraft:wall_sign':
-                            return 'red', 'Block at {} {} {} should be a sign, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a sign, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] != (4 if z % 2 == 0 else 5):
-                            return 'red', 'Sign at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z)
+                            return 'red', 'Sign at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z), None
                     elif block_symbol == '#':
                         # chest
                         if block['id'] != 'minecraft:chest':
-                            return 'red', 'Block at {} {} {} should be a chest, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a chest, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         for slot in block['tileEntity']['Items']:
                             if not item.matches_slot(slot):
-                                return 'red', 'Storage chest at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                                return 'red', 'Storage chest at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
                     elif block_symbol == '<':
                         # hopper facing south
                         if block['id'] != 'minecraft:hopper':
-                            return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] & 0x7 != 3: # south
-                            return 'red', 'Hopper at {} {} {} should be pointing south, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
+                            return 'red', 'Hopper at {} {} {} should be pointing south, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']]), None
                         storage_hoppers = {
                             (5, -7, 4),
                             (6, -5, 4)
@@ -339,7 +340,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         if (layer_x, layer_y, layer_z) in storage_hoppers:
                             for slot in block['tileEntity']['Items']:
                                 if not item.matches_slot(slot):
-                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
                     elif block_symbol == '>':
                         # hopper facing north
                         if layer_y == -7 and layer_x == 0 and z < 8:
@@ -347,9 +348,9 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                             pass #TODO introduce special checks for them
                         else:
                             if block['id'] != 'minecraft:hopper':
-                                return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             if block['damage'] & 0x7 != 2: # north
-                                return 'red', 'Hopper at {} {} {} should be pointing north, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
+                                return 'red', 'Hopper at {} {} {} should be pointing north, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']]), None
                             storage_hoppers = {
                                 (3, -7, 3),
                                 (3, -4, 2)
@@ -357,14 +358,14 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                             if (layer_x, layer_y, layer_z) in storage_hoppers:
                                 for slot in block['tileEntity']['Items']:
                                     if not item.matches_slot(slot):
-                                        return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                                        return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
                     elif block_symbol == '?':
                         # any block
                         pass
                     elif block_symbol == 'C':
                         # comparator
                         if block['id'] != 'minecraft:unpowered_comparator':
-                            return 'red', 'Block at {} {} {} should be a comparator, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a comparator, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         known_facings = {
                             (5, -7, 2): 0x2, # south
                             (5, -5, 2): 0x2, # south
@@ -379,9 +380,9 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         facing = block['damage'] & 0x3
                         if (layer_x, layer_y, layer_z) in known_facings:
                             if known_facings[layer_x, layer_y, layer_z] != facing:
-                                return 'red', 'Comparator at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z)
+                                return 'red', 'Comparator at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z), None
                         else:
-                            return 'red', 'Direction check for comparator at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
+                            return 'red', 'Direction check for comparator at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z), None
                         known_modes = {
                             (5, -7, 2): False, # compare
                             (5, -5, 2): False, # compare
@@ -396,18 +397,18 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         mode = (block['damage'] & 0x4) == 0x4
                         if (layer_x, layer_y, layer_z) in known_modes:
                             if known_modes[layer_x, layer_y, layer_z] != mode:
-                                return 'red', 'Comparator at {} {} {} is in {} mode, should be in {} mode.'.format(exact_x, exact_y, exact_z, 'subtraction' if mode else 'comparison', 'subtraction' if known_modes[layer_x, layer_y, layer_z] else 'comparison')
+                                return 'red', 'Comparator at {} {} {} is in {} mode, should be in {} mode.'.format(exact_x, exact_y, exact_z, 'subtraction' if mode else 'comparison', 'subtraction' if known_modes[layer_x, layer_y, layer_z] else 'comparison'), None
                         else:
-                            return 'red', 'Mode check for comparator at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
+                            return 'red', 'Mode check for comparator at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z), None
                     elif block_symbol == 'D':
                         # dropper facing up
                         if block['id'] != 'minecraft:dropper':
-                            return 'red', 'Block at {} {} {} should be a dropper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a dropper, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] & 0x7 != 1: # up
-                            return 'red', 'Dropper at {} {} {} should be facing up, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
+                            return 'red', 'Dropper at {} {} {} should be facing up, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']]), None
                         for slot in block['tileEntity']['Items']:
                             if not item.matches_slot(slot):
-                                return 'red', 'Dropper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                                return 'red', 'Dropper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
                     elif block_symbol == 'F':
                         # furnace
                         if layer_y == -6 and layer_x == 0 and z < 2:
@@ -416,7 +417,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         elif layer_y == -1 and layer_x == 7 and layer_z == 1 and (z == corridor_length - 1 or z == corridor_length - 2 and z % 2 == 0):
                             # the floor ends with a quartz slab instead of a furnace here
                             if block['id'] != 'minecraft:stone_slab':
-                                return 'red', 'Block at {} {} {} should be a quartz slab, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be a quartz slab, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             if block['damage'] & 0x7 != 0x7:
                                 slab_variant = {
                                     0: 'stone',
@@ -428,12 +429,12 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                     6: 'Nether brick',
                                     7: 'quartz'
                                 }[block['damage'] & 0x7]
-                                return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
+                                return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant), None
                             if block['damage'] & 0x8 != 0x8:
-                                return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z)
+                                return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z), None
                         else:
                             if block['id'] != 'minecraft:furnace':
-                                return 'red', 'Block at {} {} {} should be a furnace, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be a furnace, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             known_signals = {
                                 (0, -6, 4): 0,
                                 (0, -6, 5): 0,
@@ -450,31 +451,31 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                             signal = alltheitems.item.comparator_signal(block, items_data=items_data)
                             if (layer_x, layer_y, layer_z) in known_signals:
                                 if known_signals[layer_x, layer_y, layer_z] != signal:
-                                    return 'red', 'Furnace at {} {} {} has a fill level of {}, should be {}.'.format(exact_x, exact_y, exact_z, signal, known_signals[layer_x, layer_y, layer_z])
+                                    return 'red', 'Furnace at {} {} {} has a fill level of {}, should be {}.'.format(exact_x, exact_y, exact_z, signal, known_signals[layer_x, layer_y, layer_z]), None
                             else:
-                                return 'red', 'Fill level check for furnace at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
+                                return 'red', 'Fill level check for furnace at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z), None
                     elif block_symbol == 'G':
                         # glowstone
                         if block['id'] != 'minecraft:glowstone':
-                            return 'red', 'Block at {} {} {} should be glowstone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be glowstone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                     elif block_symbol == 'N':
                         # overflow hopper chain pointing north
                         if y > 1 and (z == 0 or z == 1):
                             if block['id'] == 'minecraft:hopper':
                                 if block['damage'] != 2: # north
-                                    return 'red', 'Overflow hopper at {} {} {} should be pointing north, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
+                                    return 'red', 'Overflow hopper at {} {} {} should be pointing north, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']]), None
                             elif block['id'] == 'minecraft:air':
                                 pass # also allow air because some overflow hopper chains don't start on the first floor
                             else:
-                                return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
 
                         else:
                             if block['id'] != 'minecraft:air':
-                                return 'red', 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                     elif block_symbol == 'P':
                         # upside-down oak stairs
                         if block['id'] != 'minecraft:oak_stairs':
-                            return 'red', 'Block at {} {} {} should be oak stairs, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be oak stairs, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] & 0x3 != (0x1 if z % 2 == 0 else 0x0):
                             stairs_facings = {
                                 0: 'west',
@@ -482,13 +483,13 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                 2: 'south',
                                 3: 'north'
                             }
-                            return 'red', 'Stairs at {} {} {} should be facing {}, is {}.'.format(exact_x, exact_y, exact_z, stairs_facings[0x1 if z % 2 == 0 else 0x0], stairs_facings[block['damage'] & 0x3])
+                            return 'red', 'Stairs at {} {} {} should be facing {}, is {}.'.format(exact_x, exact_y, exact_z, stairs_facings[0x1 if z % 2 == 0 else 0x0], stairs_facings[block['damage'] & 0x3]), None
                         if block['damage'] & 0x4 != 0x4:
-                            return 'red', 'Stairs at {} {} {} should be upside-down.'.format(exact_x, exact_y, exact_z)
+                            return 'red', 'Stairs at {} {} {} should be upside-down.'.format(exact_x, exact_y, exact_z), None
                     elif block_symbol == 'Q':
                         # quartz top slab
                         if block['id'] != 'minecraft:stone_slab':
-                            return 'red', 'Block at {} {} {} should be a quartz slab, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a quartz slab, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] & 0x7 != 0x7:
                             slab_variant = {
                                 0: 'stone',
@@ -500,13 +501,13 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                 6: 'Nether brick',
                                 7: 'quartz'
                             }[block['damage'] & 0x7]
-                            return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
+                            return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant), None
                         if block['damage'] & 0x8 != 0x8:
-                            return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z)
+                            return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z), None
                     elif block_symbol == 'R':
                         # repeater
                         if block['id'] not in ('minecraft:unpowered_repeater', 'minecraft:powered_repeater'):
-                            return 'red', 'Block at {} {} {} should be a repeater, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a repeater, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         known_facings = {
                             (1, -8, 2): 0x0, # north
                             (3, -8, 3): 0x3 if z % 2 == 0 else 0x1, # west / east
@@ -517,9 +518,9 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         facing = block['damage'] & 0x3
                         if (layer_x, layer_y, layer_z) in known_facings:
                             if known_facings[layer_x, layer_y, layer_z] != facing:
-                                return 'red', 'Repeater at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z)
+                                return 'red', 'Repeater at {} {} {} is facing the wrong way.'.format(exact_x, exact_y, exact_z), None
                         else:
-                            return 'red', 'Direction check for repeater at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
+                            return 'red', 'Direction check for repeater at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z), None
                         known_delays = { # in game ticks
                             (1, -8, 2): 4,
                             (3, -8, 3): 2,
@@ -530,13 +531,13 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         delay_ticks = 2 * (block['damage'] >> 2) + 2
                         if (layer_x, layer_y, layer_z) in known_delays:
                             if known_delays[layer_x, layer_y, layer_z] != delay_ticks:
-                                return 'red', 'Repeater at {} {} {} has a delay of {} game tick{}, should be {}.'.format(exact_x, exact_y, exact_z, delay_ticks, '' if delay_ticks == 1 else 's', known_delays[layer_x, layer_y, layer_z])
+                                return 'red', 'Repeater at {} {} {} has a delay of {} game tick{}, should be {}.'.format(exact_x, exact_y, exact_z, delay_ticks, '' if delay_ticks == 1 else 's', known_delays[layer_x, layer_y, layer_z]), None
                         else:
-                            return 'red', 'Delay check for repeater at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
+                            return 'red', 'Delay check for repeater at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z), None
                     elif block_symbol == 'S':
                         # stone top slab
                         if block['id'] != 'minecraft:stone_slab':
-                            return 'red', 'Block at {} {} {} should be a stone slab, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a stone slab, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] & 0x7 != 0x0:
                             slab_variant = {
                                 0: 'stone',
@@ -548,13 +549,13 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                 6: 'Nether brick',
                                 7: 'quartz'
                             }[block['damage'] & 0x7]
-                            return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/0">stone slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant)
+                            return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/0">stone slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant), None
                         if block['damage'] & 0x8 != 0x8:
-                            return 'red', 'Quartz slab at {} {} {} should be a top slab.'.format(exact_x, exact_y, exact_z)
+                            return 'red', 'Quartz slab at {} {} {} should be a top slab.'.format(exact_x, exact_y, exact_z), None
                     elif block_symbol == 'T':
                         # redstone torch attached to the side of a block
                         if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
-                            return 'red', 'Block at {} {} {} should be a redstone torch, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a redstone torch, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         known_facings = {
                             (3, -8, 1): 1 if z % 2 == 0 else 2, # west / east
                             (2, -7, 1): 3, # north
@@ -571,14 +572,14 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         }
                         if (layer_x, layer_y, layer_z) in known_facings:
                             if known_facings[layer_x, layer_y, layer_z] != block['damage']:
-                                return 'red', 'Redstone torch at {} {} {} attached to the block {}, should be attached to the block {}.'.format(exact_x, exact_y, exact_z, TORCH_FACINGS[block['damage']], TORCH_FACINGS[known_facings[layer_x, layer_y, layer_z]])
+                                return 'red', 'Redstone torch at {} {} {} attached to the block {}, should be attached to the block {}.'.format(exact_x, exact_y, exact_z, TORCH_FACINGS[block['damage']], TORCH_FACINGS[known_facings[layer_x, layer_y, layer_z]]), None
                         else:
-                            return 'red', 'Facing check for redstone torch at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z)
+                            return 'red', 'Facing check for redstone torch at {} {} {} (relative coords: {} {} {}) not yet implemented.'.format(exact_x, exact_y, exact_z, layer_x, layer_y, layer_z), None
                     elif block_symbol == 'W':
                         # back wall
                         if z == corridor_length - 1 or z == corridor_length - 2 and z % 2 == 0:
                             if block['id'] != 'minecraft:stone':
-                                return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             if block['damage'] != 0:
                                 stone_variant = {
                                     0: 'stone',
@@ -589,26 +590,26 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                     5: 'andesite',
                                     6: 'polished andesite'
                                 }[block['damage']]
-                                return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant)
+                                return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant), None
                     elif block_symbol == 'X':
                         # overflow hopper chain pointing down
                         if layer_y < -7 and y < 6 and (z == 4 or z == 5) or layer_y > -7 and y > 1 and (z == 0 or z == 1):
                             if block['id'] == 'minecraft:hopper':
                                 if block['damage'] != 0: # down
-                                    return 'red', 'Overflow hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
+                                    return 'red', 'Overflow hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']]), None
                             elif block['id'] == 'minecraft:air':
                                 pass # also allow air because some overflow hopper chains don't start on the first floor
                             else:
-                                return 'red', 'Block at {} {} {} should be air or a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be air or a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         else:
                             if block['id'] != 'minecraft:air':
-                                return 'red', 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                     elif block_symbol == '^':
                         # hopper facing outward
                         if block['id'] != 'minecraft:hopper':
-                            return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] & 0x7 != (5 if z % 2 == 0 else 4): # east / west
-                            return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'east' if z % 2 == 0 else 'west', HOPPER_FACINGS[block['damage']])
+                            return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'east' if z % 2 == 0 else 'west', HOPPER_FACINGS[block['damage']]), None
                         storage_hoppers = {
                             (3, -5, 3),
                             (6, -5, 3),
@@ -618,39 +619,39 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         if (layer_x, layer_y, layer_z) in storage_hoppers:
                             for slot in block['tileEntity']['Items']:
                                 if not item.matches_slot(slot):
-                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
                     elif block_symbol == 'c':
                         # crafting table
                         if layer_y == -7 and (z < 4 or z < 6 and layer_z > 1):
                             if block['id'] != 'minecraft:stone':
-                                return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             pass #TODO check damage
                         else:
                             if block['id'] != 'minecraft:crafting_table':
-                                return 'red', 'Block at {} {} {} should be a crafting table, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be a crafting table, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                     elif block_symbol == 'i':
                         # torch attached to the top of a block
                         if block['id'] != 'minecraft:torch':
-                            return 'red', 'Block at {} {} {} should be a torch, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a torch, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         pass #TODO check facing
                     elif block_symbol == 'p':
                         # oak planks
                         if layer_y == -8 and (z < 4 or z < 6 and layer_z > 1):
                             if block['id'] != 'minecraft:stone':
-                                return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             pass #TODO check damage
                         else:
                             if block['id'] != 'minecraft:planks':
-                                return 'red', 'Block at {} {} {} should be oak planks, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                                return 'red', 'Block at {} {} {} should be oak planks, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             pass #TODO check material
                     elif block_symbol == 'r':
                         # redstone dust
                         if block['id'] != 'minecraft:redstone_wire':
-                            return 'red', 'Block at {} {} {} should be redstone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be redstone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                     elif block_symbol == 's':
                         # stone
                         if block['id'] != 'minecraft:stone':
-                            return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] != 0:
                             stone_variant = {
                                 0: 'stone',
@@ -661,19 +662,19 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                 5: 'andesite',
                                 6: 'polished andesite'
                             }[block['damage']]
-                            return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant)
+                            return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant), None
                     elif block_symbol == 't':
                         # redstone torch attached to the top of a block
                         if block['id'] not in ('minecraft:unlit_redstone_torch', 'minecraft:redstone_torch'):
-                            return 'red', 'Block at {} {} {} should be a redstone torch, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a redstone torch, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] != 5: # attached to the block below
-                            return 'red', 'Redstone torch at {} {} {} should be attached to the block below, is attached to the block {}'.format(exact_x, exact_y, exact_z, TORCH_FACINGS[block['damage']])
+                            return 'red', 'Redstone torch at {} {} {} should be attached to the block below, is attached to the block {}'.format(exact_x, exact_y, exact_z, TORCH_FACINGS[block['damage']]), None
                     elif block_symbol == 'v':
                         # hopper facing inwards
                         if block['id'] != 'minecraft:hopper':
-                            return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] & 0x7 != (4 if z % 2 == 0 else 5): # west / east
-                            return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'west' if z % 2 == 0 else 'east', HOPPER_FACINGS[block['damage']])
+                            return 'red', 'Hopper at {} {} {} should be pointing {}, is {}.'.format(exact_x, exact_y, exact_z, 'west' if z % 2 == 0 else 'east', HOPPER_FACINGS[block['damage']]), None
                         storage_hoppers = {
                             (3, -7, 4),
                             (4, -7, 4),
@@ -682,20 +683,20 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         if (layer_x, layer_y, layer_z) in storage_hoppers:
                             for slot in block['tileEntity']['Items']:
                                 if not item.matches_slot(slot):
-                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
                     elif block_symbol == 'x':
                         # hopper facing down
                         if block['id'] != 'minecraft:hopper':
-                            return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] & 0x7 != 0: # down
-                            return 'red', 'Hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']])
+                            return 'red', 'Hopper at {} {} {} should be pointing down, is {}.'.format(exact_x, exact_y, exact_z, HOPPER_FACINGS[block['damage']]), None
                         storage_hoppers = {
                             (5, -1, 2)
                         }
                         if (layer_x, layer_y, layer_z) in storage_hoppers:
                             for slot in block['tileEntity']['Items']:
                                 if not item.matches_slot(slot):
-                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                                    return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
                     elif block_symbol == '~':
                         # hopper chain
                         if block['id'] == 'minecraft:hopper':
@@ -704,11 +705,11 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         elif block['id'] == 'minecraft:air':
                             pass #TODO check alignment
                         else:
-                            return 'red', 'Block at {} {} {} should be a hopper or air, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                            return 'red', 'Block at {} {} {} should be a hopper or air, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         pass #TODO check hopper chain integrity
                     else:
-                        return 'red', 'Not yet implemented: block at {} {} {} should be {}.'.format(exact_x, exact_y, exact_z, block_symbol)
-    if state[0] is None or state[0] == 'cyan':
+                        return 'red', 'Not yet implemented: block at {} {} {} should be {}.'.format(exact_x, exact_y, exact_z, block_symbol), None
+    if state[0] in (None, 'cyan', 'orange', 'yellow'):
         containers = [ # layer coords of all counted container blocks in the SmartChest
             (3, -7, 3),
             (3, -7, 4),
@@ -733,20 +734,23 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             (5, -1, 2),
             (5, 0, 2),
             (5, 0, 3)
+        ] if state[0] in (None, 'cyan') else [ # layer coords of the access chest
+            (5, 0, 2),
+            (5, 0, 3)
         ]
         total_items = sum(sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']) for container in containers)
         max_slots = sum(alltheitems.item.NUM_SLOTS[block_at(*layer_coords(*container), chunk_cache=chunk_cache)['id']] for container in containers)
-        return state[0], FillLevel(item.max_stack_size(), total_items, max_slots)
+        return state[0], state[1], FillLevel(item.max_stack_size(), total_items, max_slots, is_smart_chest=state[0] in (None, 'cyan'))
     return state
 
 def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None):
-    color, state_message = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
+    color, state_message, fill_level = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
     if colors_to_explain is not None:
         colors_to_explain.add(color)
-    if isinstance(state_message, FillLevel) and not state_message.is_full():
-        return '<td style="background-color: {};">{}<div class="durability"><div style="background-color: #f0f; width: {}px;"></div></div></td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image(), 0 if state_message.is_empty() else 2 + int(state_message.fraction * 13) * 2)
-    else:
+    if fill_level is None or fill_level.is_full():
         return '<td style="background-color: {};">{}</td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image())
+    else:
+        return '<td style="background-color: {};">{}<div class="durability"><div style="background-color: #f0f; width: {}px;"></div></div></td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image(), 0 if fill_level.is_empty() else 2 + int(fill_level.fraction * 13) * 2)
 
 def index():
     yield ati.header(title='Cloud')
