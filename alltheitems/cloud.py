@@ -910,12 +910,12 @@ def todo():
                 del item_stub['name']
             else:
                 item_name = None
-            color, state_message = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
+            color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
             if not isinstance(state_message, FillLevel) or not state_message.is_full():
-                states[x, y, z] = color, state_message, alltheitems.item.Item(item_stub, items_data=items_data)
+                states[x, y, z] = color, state_message, fill_level, alltheitems.item.Item(item_stub, items_data=items_data)
         for coords, state in sorted(states.items(), key=priority):
             x, y, z = coords
-            color, state_message, item = state
+            color, state_message, fill_level, item = state
             if color != current_color:
                 if current_color is not None:
                     yield '</tbody></table>'
@@ -929,9 +929,9 @@ def todo():
                     <td class="coord">{{z}}</td>
                     <td class="item-image">{{!item.image()}}</td>
                     <td class="item-name">{{!item.link_text()}}</td>
-                    <td style="background-color: {{color}}">{{!state_message}}</td>
+                    <td style="background-color: {{color}}">{{!fill_level if color in ('transparent', '#0ff') else state_message}}</td>
                 </tr>
-            """, x=x, y=y, z=z, item=item, color=HTML_COLORS[color], state_message=state_message)
+            """, x=x, y=y, z=z, item=item, color=HTML_COLORS[color], fill_level=fill_level, state_message=state_message)
         yield '</tbody></table>'
     yield from ati.html_exceptions(body())
     yield ati.footer(linkify_headers=True)
