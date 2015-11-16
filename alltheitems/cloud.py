@@ -892,8 +892,8 @@ def todo():
         def priority(pair):
             coords, state = pair
             x, y, z = coords
-            color, state_message, fill_level, item = state
-            return header_indexes[color], state_message.fraction if isinstance(state_message, FillLevel) else None, y * (-1 if color == 'orange' else 1), x if y % 2 == 0 else -x, z
+            color, _, fill_level, _ = state
+            return header_indexes[color], None if fill_level is None else fill_level.fraction, y * (-1 if color == 'orange' else 1), x if y % 2 == 0 else -x, z
 
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
