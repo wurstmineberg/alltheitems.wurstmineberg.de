@@ -892,7 +892,7 @@ def todo():
         def priority(pair):
             coords, state = pair
             x, y, z = coords
-            color, state_message, item_name = state
+            color, state_message, fill_level, item = state
             return header_indexes[color], state_message.fraction if isinstance(state_message, FillLevel) else None, y * (-1 if color == 'orange' else 1), x if y % 2 == 0 else -x, z
 
         chunk_cache = {}
