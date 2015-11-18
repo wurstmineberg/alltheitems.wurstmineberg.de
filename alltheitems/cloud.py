@@ -300,7 +300,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
         if not is_connected:
             return 'red', 'Overflow hopper chain at {} is not connected to the Smelting Center item elevator at {}: {}.'.format(start, end, message), None
-    if exists and has_smart_chest and has_sorter and has_overflow:
+    if exists and has_smart_chest:
         # error check: all blocks
         for layer_y, layer in smart_chest_schematic(document_root=document_root):
             for layer_x, row in enumerate(layer):
