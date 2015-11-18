@@ -911,7 +911,7 @@ def todo():
             else:
                 item_name = None
             color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
-            if fill_level is None or not fill_level.is_full():
+            if fill_level is None or not fill_level.is_full() or color not in (None, 'cyan'):
                 states[x, y, z] = color, state_message, fill_level, alltheitems.item.Item(item_stub, items_data=items_data)
         for coords, state in sorted(states.items(), key=priority):
             x, y, z = coords
