@@ -893,7 +893,7 @@ def todo():
             coords, state = pair
             x, y, z = coords
             color, _, fill_level, _ = state
-            return header_indexes[color], None if fill_level is None else fill_level.fraction, y * (-1 if color == 'orange' else 1), x if y % 2 == 0 else -x, z
+            return header_indexes[color], None if fill_level is None else fill_level.fraction * (-1 if color == 'orange' else 1), y * (-1 if color == 'orange' else 1), x if y % 2 == 0 else -x, z
 
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
@@ -911,7 +911,7 @@ def todo():
             else:
                 item_name = None
             color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
-            if not isinstance(state_message, FillLevel) or not state_message.is_full():
+            if fill_level is None or not fill_level.is_full():
                 states[x, y, z] = color, state_message, fill_level, alltheitems.item.Item(item_stub, items_data=items_data)
         for coords, state in sorted(states.items(), key=priority):
             x, y, z = coords
