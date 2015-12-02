@@ -636,7 +636,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         pass #TODO check facing
                     elif block_symbol == 'p':
                         # oak planks
-                        if layer_y == -8 and (z < 4 or z < 6 and layer_z > 1):
+                        if layer_y == -8 and (y == 6 or z < 4 or z < 6 and layer_z > 1):
                             if block['id'] != 'minecraft:stone':
                                 return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             pass #TODO check damage
