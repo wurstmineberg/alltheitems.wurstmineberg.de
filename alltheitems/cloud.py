@@ -622,7 +622,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                     return 'red', 'Storage hopper at {} {} {} contains items of the wrong kind: {}.'.format(exact_x, exact_y, exact_z, alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text()), None
                     elif block_symbol == 'c':
                         # crafting table
-                        if layer_y == -7 and (z < 4 or z < 6 and layer_z > 1):
+                        if layer_y == -7 and (y == 6 or z < 4 or z < 6 and layer_z > 1):
                             if block['id'] != 'minecraft:stone':
                                 return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                             pass #TODO check damage
