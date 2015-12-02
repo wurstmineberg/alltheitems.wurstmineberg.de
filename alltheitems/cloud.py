@@ -46,6 +46,16 @@ class FillLevel:
     def stacks(self):
         return divmod(self.total_items, self.stack_size)
 
+STONE_VARIANTS = {
+    0: 'stone',
+    1: 'granite',
+    2: 'polished granite',
+    3: 'diorite',
+    4: 'polished diorite',
+    5: 'andesite',
+    6: 'polished andesite'
+}
+
 HOPPER_FACINGS = {
     0: 'down',
     1: 'up', #for droppers
@@ -432,6 +442,18 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                                 return 'red', 'Block at {} {} {} should be a <a href="/block/minecraft/stone_slab/7">quartz slab</a>, is a <a href="/block/minecraft/stone_slab/{}">{} slab</a>.'.format(exact_x, exact_y, exact_z, block['damage'] & 0x7, slab_variant), None
                             if block['damage'] & 0x8 != 0x8:
                                 return 'red', 'Quartz slab at {} {} {} should be a top slab, is a bottom slab.'.format(exact_x, exact_y, exact_z), None
+                        elif x == 0 and y == 6 and layer_y == -1 and layer_x == 7:
+                            # the central corridor on the 6th floor uses stone bricks instead of furnaces for the floor
+                            if block['id'] != 'minecraft:stonebrick':
+                                return 'red', 'Block at {} {} {} should be stone bricks, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
+                            if block['damage'] != 0:
+                                stonebrick_variant = {
+                                    0: 'regular',
+                                    1: 'mossy',
+                                    2: 'cracked',
+                                    3: 'chiseled'
+                                }[block['damage']]
+                                return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stonebrick/0">regular stone bricks</a>, is <a href="/block/minecraft/stonebrick/{}">{} stone bricks</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stonebrick_variant), None
                         else:
                             if block['id'] != 'minecraft:furnace':
                                 return 'red', 'Block at {} {} {} should be a furnace, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
@@ -625,7 +647,9 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         if layer_y == -7 and (y == 6 or z < 4 or z < 6 and layer_z > 1):
                             if block['id'] != 'minecraft:stone':
                                 return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
-                            pass #TODO check damage
+                            if block['damage'] != 0:
+                                stone_variant = STONE_VARIANTS[block['damage']]
+                                return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant), None
                         else:
                             if block['id'] != 'minecraft:crafting_table':
                                 return 'red', 'Block at {} {} {} should be a crafting table, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
@@ -639,7 +663,9 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         if layer_y == -8 and (y == 6 or z < 4 or z < 6 and layer_z > 1):
                             if block['id'] != 'minecraft:stone':
                                 return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
-                            pass #TODO check damage
+                            if block['damage'] != 0:
+                                stone_variant = STONE_VARIANTS[block['damage']]
+                                return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant), None
                         else:
                             if block['id'] != 'minecraft:planks':
                                 return 'red', 'Block at {} {} {} should be oak planks, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
@@ -657,15 +683,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                             else:
                                 return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] != 0:
-                            stone_variant = {
-                                0: 'stone',
-                                1: 'granite',
-                                2: 'polished granite',
-                                3: 'diorite',
-                                4: 'polished diorite',
-                                5: 'andesite',
-                                6: 'polished andesite'
-                            }[block['damage']]
+                            stone_variant = STONE_VARIANTS[block['damage']]
                             return 'red', 'Block at {} {} {} should be <a href="/block/minecraft/stone/0">regular stone</a>, is <a href="/block/minecraft/stone/{}">{}</a>.'.format(exact_x, exact_y, exact_z, block['damage'], stone_variant), None
                     elif block_symbol == 't':
                         # redstone torch attached to the top of a block
