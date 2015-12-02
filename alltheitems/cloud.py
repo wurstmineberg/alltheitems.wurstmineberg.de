@@ -651,7 +651,11 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                     elif block_symbol == 's':
                         # stone
                         if block['id'] != 'minecraft:stone':
-                            return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
+                            if exact_y < 5:
+                                if block['id'] != 'minecraft:bedrock':
+                                    return 'red', 'Block at {} {} {} should be stone or bedrock, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
+                            else:
+                                return 'red', 'Block at {} {} {} should be stone, is {}.'.format(exact_x, exact_y, exact_z, block['id']), None
                         if block['damage'] != 0:
                             stone_variant = {
                                 0: 'stone',
