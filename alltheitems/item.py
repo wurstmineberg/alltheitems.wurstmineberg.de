@@ -299,7 +299,12 @@ class Item:
             if slot['Damage'] != self.stub['damage']:
                 return False
         if 'effect' in self.stub:
-            raise NotImplementedError('match_slot with effect NYI')
+            if 'tag' not in slot:
+                return False
+            if 'Potion' not in slot['tag']:
+                return False
+            if slot['tag']['Potion'] != self.stub['effect']:
+                return False
         if 'tagValue' in self.stub:
             if 'tag' in slot:
                 plugin, item_id = self.stub['id'].split(':', 1)
