@@ -301,7 +301,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             if len(line_text) > 0:
                 text.append(line_text)
         text = ' '.join(text)
-        if text != item_name:
+        if text != item_name.translate({0x2161: 'II'}):
             return 'red', 'Sign has wrong text: should be {!r}, is {!r}.'.format(xml.sax.saxutils.escape(item_name), xml.sax.saxutils.escape(text)), None
     if has_overflow:
         # error check: overflow hopper chain
