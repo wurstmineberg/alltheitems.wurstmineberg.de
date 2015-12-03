@@ -753,7 +753,6 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             (6, -3, 2),
             (5, -2, 2),
             (6, -2, 2),
-            (5, -1, 2),
             (5, 0, 2),
             (5, 0, 3)
         ] if state[0] in (None, 'cyan') else [ # layer coords of the access chest
