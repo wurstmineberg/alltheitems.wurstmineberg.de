@@ -635,6 +635,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                         storage_hoppers = {
                             (3, -5, 3),
                             (6, -5, 3),
+                            (7, -4, 3),
                             (5, -3, 2),
                             (6, -3, 2)
                         }
