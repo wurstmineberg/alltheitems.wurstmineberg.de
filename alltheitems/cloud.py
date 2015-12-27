@@ -777,7 +777,7 @@ def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk
 def index():
     yield ati.header(title='Cloud')
     def body():
-        yield '<p>The <a href="http://wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="http://{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="http://wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=ati.host)
+        yield '<p>The <a href="//wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="//{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="//wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=ati.host)
         yield """<style type="text/css">
             .item-table td {
                 box-sizing: content-box;
@@ -868,7 +868,7 @@ def index():
             ('gray', "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>"),
             ('orange', "<p>An orange background means that the chest doesn't have a SmartChest yet. It can only store 54 stacks.</p>"),
             ('yellow', "<p>A yellow background means that the chest doesn't have a sorter yet.</p>"),
-            ('cyan', '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="http://wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>'),
+            ('cyan', '<p>A cyan background means that the chest has no sorter because it stores an unstackable item. These items should not be automatically <a href="//wiki.wurstmineberg.de/Soup#Cloud">sent</a> to the Cloud.</p>'),
             (None, '<p>A white background means that everything is okay: the chest has a SmartChest, a sorter, and overflow protection.</p>')
         ])
         for chest_color in sorted(colors_to_explain, key=list(color_explanations.keys()).index):

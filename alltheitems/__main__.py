@@ -49,10 +49,11 @@ def header(*, title='All The Items'):
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <meta name="description" content="Searchable Minecraft blocks and items database" />
             <meta name="author" content="Wurstmineberg" />
-            <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" />
-            <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" />
-            <link rel="stylesheet" href="http://assets.{{host}}/css/common.css" />
-            <link rel="stylesheet" href="http://assets.{{host}}/css/responsive.css" />
+            <link rel="shortcut icon" href="//assets.{{host}}/img/favicon.ico" />
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.min.css" />
+            <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" />
+            <link rel="stylesheet" href="//assets.{{host}}/css/common.css" />
+            <link rel="stylesheet" href="//assets.{{host}}/css/responsive.css" />
         </head>
         <body>
             <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -63,21 +64,21 @@ def header(*, title='All The Items'):
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="http://{{host}}/">Wurstmineberg</a>
+                    <a class="navbar-brand" href="//{{host}}/">Wurstmineberg</a>
                 </div>
                 <div class="collapse navbar-collapse navbar-ex1-collapse">
                     <ul id="navbar-list" class="nav navbar-nav">
-                        <li><a href="http://{{host}}/"><i class="fa fa-home"></i> Home</a></li>
-                        <li><a href="http://{{host}}/about"><i class="fa fa-info-circle"></i> About</a></li>
-                        <li><a href="http://{{host}}/people"><i class="fa fa-users"></i> People</a></li>
-                        <li><a href="http://{{host}}/stats"><i class="fa fa-table"></i> Statistics</a></li>
+                        <li><a href="//{{host}}/"><i class="fa fa-home"></i> Home</a></li>
+                        <li><a href="//{{host}}/about"><i class="fa fa-info-circle"></i> About</a></li>
+                        <li><a href="//{{host}}/people"><i class="fa fa-users"></i> People</a></li>
+                        <li><a href="//{{host}}/stats"><i class="fa fa-table"></i> Statistics</a></li>
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" data-toggle="dropdown" aria-expanded="true"><i class="fa fa-book"></i> Wiki<b class="caret"></b></a>
                             <ul class="dropdown-menu p-navigation" id="p-navigation">
-                                <li id="n-mainpage-description"><a href="http://wiki.{{host}}/" title="Visit the main page [ctrl-alt-z]" accesskey="z">Main page</a></li>
-                                <li id="n-currentevents"><a href="http://wiki.{{host}}/Wurstmineberg_Wiki:Current_events" title="Find background information on current events">Current events</a></li>
-                                <li id="n-recentchanges"><a href="http://wiki.{{host}}/Special:RecentChanges" title="A list of recent changes in the wiki [ctrl-alt-r]" accesskey="r">Recent changes</a></li>
-                                <li id="n-randompage"><a href="http://wiki.{{host}}/Special:Random" title="Load a random page [ctrl-alt-x]" accesskey="x">Random page</a></li>
+                                <li id="n-mainpage-description"><a href="//wiki.{{host}}/" title="Visit the main page [ctrl-alt-z]" accesskey="z">Main page</a></li>
+                                <li id="n-currentevents"><a href="//wiki.{{host}}/Wurstmineberg_Wiki:Current_events" title="Find background information on current events">Current events</a></li>
+                                <li id="n-recentchanges"><a href="//wiki.{{host}}/Special:RecentChanges" title="A list of recent changes in the wiki [ctrl-alt-r]" accesskey="r">Recent changes</a></li>
+                                <li id="n-randompage"><a href="//wiki.{{host}}/Special:Random" title="Load a random page [ctrl-alt-x]" accesskey="x">Random page</a></li>
                                 <li id="n-help"><a href="https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Contents" title="The place to find out">Help</a></li>
                             </ul>
                         </li>
@@ -103,11 +104,10 @@ def footer(*, linkify_headers=False, additional_js=''):
             </div>
             <hr />
             <p class="muted text-center">The People of wurstmineberg.de 2012–2015</p>
-            <script src="//code.jquery.com/jquery-1.10.1.min.js"></script>
-            <script src="http://underscorejs.org/underscore-min.js"></script>
-            <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-            <script src="//jquerymy.com/js/md5.js"></script>
-            <script src="http://assets.{host}/js/common.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/js/bootstrap.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+            <script src="//assets.{host}/js/common.js"></script>
             <script type="text/javascript">
                 // run by default
     """.format(host=host) + ('linkifyHeaders();' if linkify_headers else '') + """

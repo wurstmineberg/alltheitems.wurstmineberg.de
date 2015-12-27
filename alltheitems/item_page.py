@@ -146,7 +146,7 @@ def item_page(item_stub, block=False):
         if block:
             yield bottle.template("""
                 <div id="section-general" class="section">
-                    <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
+                    <h2>Coming <a href="//wiki.{{host}}/Soon™">soon™</a></h2>
                 </div>
             """, host=ati.host) #TODO
         else:
@@ -173,7 +173,7 @@ def item_page(item_stub, block=False):
                         %end
                     %end
                     <h2>Latency-induced Atomic Genesis</h2>
-                    <p><a href="http://wiki.{{host}}/Latency-induced_Atomic_Genesis">LAG</a> legality info coming <a href="http://wiki.{{host}}/Soon™">soon™</a>.</p>
+                    <p><a href="//wiki.{{host}}/Latency-induced_Atomic_Genesis">LAG</a> legality info coming <a href="//wiki.{{host}}/Soon™">soon™</a>.</p>
                 </div>
             """, host=ati.host, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=lambda: alltheitems.cloud.chest_state(coords, item_stub, corridor_length, item_name), color_map=color_map) #TODO LAG info
         # obtaining
@@ -243,7 +243,7 @@ def item_page(item_stub, block=False):
         #TODO usage
         yield bottle.template("""
             <div id="section-usage" class="section hidden">
-                <h2>Coming <a href="http://wiki.{{host}}/Soon™">soon™</a></h2>
+                <h2>Coming <a href="//wiki.{{host}}/Soon™">soon™</a></h2>
             </div>
         """, host=ati.host)
     yield from ati.html_exceptions(body())

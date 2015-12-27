@@ -103,11 +103,11 @@ def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, st
         del item_info['blockInfo']
     if 'image' in item_info:
         if tint is None:
-            ret = '<img src="http://assets.{host}/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style, host=ati.host)
+            ret = '<img src="//assets.{host}/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style, host=ati.host)
         else:
-            ret = '<img style="background: url(http://api.{host}/v2/minecraft/items/render/dyed-by-id/{}/{}/{:06x}.png)" src="http://assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(plugin, item_id, tint, item_info['image'], ' '.join(classes), style, host=ati.host)
+            ret = '<img style="background: url(//api.{host}/v2/minecraft/items/render/dyed-by-id/{}/{}/{:06x}.png)" src="//assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(plugin, item_id, tint, item_info['image'], ' '.join(classes), style, host=ati.host)
     else:
-        ret = '<img src="http://assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=ati.host)
+        ret = '<img src="//assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=ati.host)
     if tooltip:
         ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
     return linkify(plugin, string_id, ret, link, block=block)
