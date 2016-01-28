@@ -181,7 +181,7 @@ def global_cloud_error_checks(*, chunk_cache=None, block_at=alltheitems.world.Wo
             json.dump({
                 'color': color,
                 'message': message
-            }, sort_keys=True, indent=4)
+            }, cache_f, sort_keys=True, indent=4)
     return color, message
 
 def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
