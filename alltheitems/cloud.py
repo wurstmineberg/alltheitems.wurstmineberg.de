@@ -154,6 +154,34 @@ def chest_coords(item, *, include_meta=False):
     if include_meta:
         return None, 0, None
 
+def global_cloud_error_checks(*, chunk_cache=None, block_at=alltheitems.world.World().block_at):
+    cache_path = ati.cache_root / 'cloud-globals.json'
+    max_age = datetime.timedelta(hours=1, minutes=random.randrange(0, 60)) # use a random value between 1 and 2 hours for the cache expiration
+    if cache_path.exists() and datetime.datetime.utcfromtimestamp(cache_path.stat().st_mtime) > datetime.datetime.utcnow() - max_age:
+        # cached check results are recent enough
+        with cache_path.open() as cache_f:
+            cache = json.load(cache_f)
+        return cache['color'], cache['message']
+    # cached check results are too old, recheck
+    if chunk_cache is None:
+        chunk_cache = {}
+    color = None
+    message = 'No global errors detected.'
+    # error check: input hopper chain
+    start = 15, 61, 30 # the last point where the Soup channel for the Cloud merges
+    end = -1, 25, 52 # the half of the uppermost overflow chest into which the hopper chain is pointing
+    is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
+    if not is_connected:
+        color = 'red'
+        message = 'Input hopper chain at {} is not connected to the unsorted overflow at {}: {}.'.format(start, end, message)
+    if ati.cache_root.exists():
+        with cache_path.open('w') as cache_f:
+            json.dump({
+                'color': color,
+                'message': message
+            }, sort_keys=True, indent=4)
+    return color, message
+
 def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
@@ -247,12 +275,9 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         has_overflow = True
     # state determined, check for errors
     if coords == (1, 1, 0): # Ender pearls
-        # error check: input hopper chain
-        start = 15, 61, 30 # the last point where the Soup channel for the Cloud merges
-        end = -1, 25, 52 # the half of the uppermost overflow chest into which the hopper chain is pointing
-        is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
-        if not is_connected:
-            return 'red', 'Input hopper chain at {} is not connected to the unsorted overflow at {}: {}.'.format(start, end, message), None
+        color, message = global_cloud_error_checks(chunk_cache=chunk_cache, block_at=block_at)
+        if color is not None:
+            return color, message, None
     if stackable and has_sorter:
         # error check: overflow exists
         if not has_overflow:
