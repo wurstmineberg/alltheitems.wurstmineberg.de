@@ -105,7 +105,7 @@ def footer(*, linkify_headers=False, additional_js=''):
     return """
             </div>
             <hr />
-            <p class="muted text-center">The People of wurstmineberg.de 2012–2015</p>
+            <p class="muted text-center">The People of wurstmineberg.de 2012–2016</p>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/js/bootstrap.min.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
