@@ -177,7 +177,7 @@ def global_error_checks(*, chunk_cache=None, block_at=alltheitems.world.World().
         with cache_path.open('w') as cache_f:
             json.dump(message, cache_f, sort_keys=True, indent=4)
 
-def chest_error_checks(x, y, z, base_x, base_y, base_z, item, exists, stackable, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, layer_coords, block_at, items_data, chunk_cache, document_root):
+def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, layer_coords, block_at, items_data, chunk_cache, document_root):
     if stackable and has_sorter:
         # error check: overflow exists
         if not has_overflow:
@@ -766,7 +766,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         pass # cached check results are recent enough
     else:
         # cached check results are too old, recheck
-        message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, exists, stackable, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, layer_coords, block_at, items_data, chunk_cache, document_root)
+        message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, layer_coords, block_at, items_data, chunk_cache, document_root)
         if ati.cache_root.exists():
             if str(y) not in cache:
                 cache[str(y)] = {}
