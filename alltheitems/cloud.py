@@ -777,7 +777,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                 'timestamp': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             }
             with cache_path.open('w') as cache_f:
-                json.dump(message, cache_f, sort_keys=True, indent=4)
+                json.dump(cache, cache_f, sort_keys=True, indent=4)
     if message is not None:
         return 'red', message, None
     # no errors, determine fill level
