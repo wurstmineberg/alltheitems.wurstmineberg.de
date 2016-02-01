@@ -658,7 +658,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                     else:
                         return 'Not yet implemented: block at {} {} {} should be {}.'.format(exact_x, exact_y, exact_z, block_symbol)
 
-def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None):
+def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
@@ -755,12 +755,13 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         if message is not None:
             return 'red', message, None
     cache_path = ati.cache_root / 'cloud-chests.json'
-    if cache_path.exists():
-        with cache_path.open() as cache_f:
-            cache = json.load(cache_f)
-        max_age = datetime.timedelta(hours=1, minutes=random.randrange(0, 60)) # use a random value between 1 and 2 hours for the cache expiration
-    else:
-        cache = {}
+    if cache is None:
+        if cache_path.exists():
+            with cache_path.open() as cache_f:
+                cache = json.load(cache_f)
+        else:
+            cache = {}
+    max_age = datetime.timedelta(hours=1, minutes=random.randrange(0, 60)) # use a random value between 1 and 2 hours for the cache expiration
     if str(y) in cache and str(x) in cache[str(y)] and str(z) in cache[str(y)][str(x)] and datetime.datetime.strptime(cache[str(y)][str(x)][str(z)]['timestamp'], '%Y-%m-%d %H:%M:%S') > datetime.datetime.utcnow() - max_age:
         message = cache[str(y)][str(x)][str(z)]['errorMessage']
         pass # cached check results are recent enough
@@ -814,8 +815,8 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         return state[0], state[1], FillLevel(item.max_stack_size(), total_items, max_slots, is_smart_chest=state[0] in (None, 'cyan'))
     return state
 
-def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None):
-    color, state_message, fill_level = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache)
+def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None, cache=None):
+    color, state_message, fill_level = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache, cache=cache)
     if colors_to_explain is not None:
         colors_to_explain.add(color)
     if fill_level is None or fill_level.is_full():
@@ -846,6 +847,12 @@ def index():
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
+        cache_path = ati.cache_root / 'cloud-chests.json'
+        if cache_path.exists():
+            with cache_path.open() as cache_f:
+                cache = json.load(cache_f)
+        else:
+            cache = None
         colors_to_explain = set()
         floors = {}
         for x, corridor, y, floor, z, chest in chest_iter():
@@ -862,7 +869,7 @@ def index():
                     del item_stub['name']
                 else:
                     item_name = None
-                return cell_from_chest(coords, item_stub, len(corridor), item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data)
+                return cell_from_chest(coords, item_stub, len(corridor), item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data, cache=cache)
 
             yield bottle.template("""
                 %import itertools
@@ -969,6 +976,12 @@ def todo():
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
+        cache_path = ati.cache_root / 'cloud-chests.json'
+        if cache_path.exists():
+            with cache_path.open() as cache_f:
+                cache = json.load(cache_f)
+        else:
+            cache = None
         states = {}
         current_color = None
         for x, corridor, y, _, z, item_stub in chest_iter():
@@ -981,7 +994,7 @@ def todo():
                 del item_stub['name']
             else:
                 item_name = None
-            color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache)
+            color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache, cache=cache)
             if fill_level is None or not fill_level.is_full() or color not in (None, 'cyan'):
                 states[x, y, z] = color, state_message, fill_level, alltheitems.item.Item(item_stub, items_data=items_data)
         for coords, state in sorted(states.items(), key=priority):
