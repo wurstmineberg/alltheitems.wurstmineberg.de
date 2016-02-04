@@ -658,7 +658,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                     else:
                         return 'Not yet implemented: block at {} {} {} should be {}.'.format(exact_x, exact_y, exact_z, block_symbol)
 
-def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None):
+def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None, allow_cache=True):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
@@ -762,7 +762,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         else:
             cache = {}
     max_age = datetime.timedelta(hours=1, minutes=random.randrange(0, 60)) # use a random value between 1 and 2 hours for the cache expiration
-    if str(y) in cache and str(x) in cache[str(y)] and str(z) in cache[str(y)][str(x)] and datetime.datetime.strptime(cache[str(y)][str(x)][str(z)]['timestamp'], '%Y-%m-%d %H:%M:%S') > datetime.datetime.utcnow() - max_age:
+    if allow_cache and str(y) in cache and str(x) in cache[str(y)] and str(z) in cache[str(y)][str(x)] and datetime.datetime.strptime(cache[str(y)][str(x)][str(z)]['timestamp'], '%Y-%m-%d %H:%M:%S') > datetime.datetime.utcnow() - max_age:
         message = cache[str(y)][str(x)][str(z)]['errorMessage']
         pass # cached check results are recent enough
     else:
@@ -815,8 +815,8 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         return state[0], state[1], FillLevel(item.max_stack_size(), total_items, max_slots, is_smart_chest=state[0] in (None, 'cyan'))
     return state
 
-def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None, cache=None):
-    color, state_message, fill_level = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache, cache=cache)
+def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None, cache=None, allow_cache=True):
+    color, state_message, fill_level = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache, cache=cache, allow_cache=allow_cache)
     if colors_to_explain is not None:
         colors_to_explain.add(color)
     if fill_level is None or fill_level.is_full():
@@ -824,7 +824,7 @@ def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk
     else:
         return '<td style="background-color: {};">{}<div class="durability"><div style="background-color: #f0f; width: {}px;"></div></div></td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image(), 0 if fill_level.is_empty() else 2 + int(fill_level.fraction * 13) * 2)
 
-def index():
+def index(allow_cache=True):
     yield ati.header(title='Cloud')
     def body():
         yield '<p>The <a href="//wiki.{host}/Cloud">Cloud</a> is the public item storage on <a href="//{host}/">Wurstmineberg</a>, consisting of 6 underground floors with <a href="//wiki.{host}/SmartChest">SmartChests</a> in them.</p>'.format(host=ati.host)
@@ -869,7 +869,7 @@ def index():
                     del item_stub['name']
                 else:
                     item_name = None
-                return cell_from_chest(coords, item_stub, len(corridor), item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data, cache=cache)
+                return cell_from_chest(coords, item_stub, len(corridor), item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data, cache=cache, allow_cache=allow_cache)
 
             yield bottle.template("""
                 %import itertools
