@@ -794,7 +794,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         else:
             cache = {}
     max_age = datetime.timedelta(hours=1, minutes=random.randrange(0, 60)) # use a random value between 1 and 2 hours for the cache expiration
-    if allow_cache and str(y) in cache and str(x) in cache[str(y)] and str(z) in cache[str(y)][str(x)] and datetime.datetime.strptime(cache[str(y)][str(x)][str(z)]['timestamp'], '%Y-%m-%d %H:%M:%S') > datetime.datetime.utcnow() - max_age:
+    if allow_cache and str(y) in cache and str(x) in cache[str(y)] and str(z) in cache[str(y)][str(x)] and cache[str(y)][str(x)][str(z)]['errorMessage'] is None and datetime.datetime.strptime(cache[str(y)][str(x)][str(z)]['timestamp'], '%Y-%m-%d %H:%M:%S') > datetime.datetime.utcnow() - max_age:
         message = cache[str(y)][str(x)][str(z)]['errorMessage']
         pass # cached check results are recent enough
     else:
