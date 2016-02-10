@@ -683,12 +683,9 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                         return 'Not yet implemented: block at {} {} {} should be {}.'.format(exact_x, exact_y, exact_z, block_symbol)
         # error check: items in storage chests but not in access chest
         access_chest_fill_level = alltheitems.item.comparator_signal(north_half, south_half)
-        total_items = sum(sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']) for container in CONTAINERS)
-        if access_chest_fill_level == 0 and total_items > 0:
-            return 'Access chest is empty but there are {} items stuck in the storage containers.'.format(total_items)
-        if access_chest_fill_level < 2 and total_items > 4 * 64:
-            access_chest_items = sum(sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']) for container in [(5, 0, 2), (5, 0, 3)])
-            return 'Access chest is almost empty but there are {} items stuck in the storage containers.'.format(total_items - access_chest_items)
+        bottom_dropper_fill_level = alltheitems.item.comparator_signal(block_at(*layer_coords(5, -7, 3), chunk_cache=chunk_cache))
+        if access_chest_fill_level < 2 and bottom_dropper_fill_level > 2:
+            return 'Access chest is {}empty but there are items stuck in the storage dropper at {} {} {}.'.format('' if access_chest_fill_level == 0 else 'almost ', total_items)
 
 def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None, allow_cache=True):
     if items_data is None:
