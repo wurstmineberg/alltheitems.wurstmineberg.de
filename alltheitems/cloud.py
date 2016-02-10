@@ -48,6 +48,31 @@ class FillLevel:
     def stacks(self):
         return divmod(self.total_items, self.stack_size)
 
+CONTAINERS = [ # layer coords of all counted container blocks in a SmartChest
+    (3, -7, 3),
+    (3, -7, 4),
+    (4, -7, 4),
+    (5, -7, 3),
+    (5, -7, 4),
+    (2, -6, 3),
+    (3, -6, 2),
+    (3, -6, 3),
+    (2, -5, 2),
+    (2, -5, 3),
+    (3, -5, 3),
+    (2, -4, 3),
+    (3, -4, 2),
+    (3, -4, 3),
+    (3, -3, 2),
+    (4, -3, 2),
+    (5, -3, 2),
+    (6, -3, 2),
+    (5, -2, 2),
+    (6, -2, 2),
+    (5, 0, 2),
+    (5, 0, 3)
+]
+
 STONE_VARIANTS = {
     0: 'stone',
     1: 'granite',
@@ -415,7 +440,6 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                                 pass # also allow air because some overflow hopper chains don't start on the first floor
                             else:
                                 return 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-
                         else:
                             if block['id'] != 'minecraft:air':
                                 return 'Block at {} {} {} should be air, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
@@ -657,6 +681,14 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                         pass #TODO check hopper chain integrity
                     else:
                         return 'Not yet implemented: block at {} {} {} should be {}.'.format(exact_x, exact_y, exact_z, block_symbol)
+        # error check: items in storage chests but not in access chest
+        access_chest_fill_level = alltheitems.item.comparator_signal(north_half, south_half)
+        total_items = sum(sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']) for container in CONTAINERS)
+        if access_chest_fill_level == 0 and total_items > 0:
+            return 'Access chest is empty but there are {} items stuck in the storage containers.'.format(total_items)
+        if access_chest_fill_level < 2 and total_items > 4 * 64:
+            access_chest_items = sum(sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']) for container in [(5, 0, 2), (5, 0, 3)])
+            return 'Access chest is almost empty but there are {} items stuck in the storage containers.'.format(total_items - access_chest_items)
 
 def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None, allow_cache=True):
     if items_data is None:
@@ -783,30 +815,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         return 'red', message, None
     # no errors, determine fill level
     if state[0] in (None, 'cyan', 'orange', 'yellow'):
-        containers = [ # layer coords of all counted container blocks in the SmartChest
-            (3, -7, 3),
-            (3, -7, 4),
-            (4, -7, 4),
-            (5, -7, 3),
-            (5, -7, 4),
-            (2, -6, 3),
-            (3, -6, 2),
-            (3, -6, 3),
-            (2, -5, 2),
-            (2, -5, 3),
-            (3, -5, 3),
-            (2, -4, 3),
-            (3, -4, 2),
-            (3, -4, 3),
-            (3, -3, 2),
-            (4, -3, 2),
-            (5, -3, 2),
-            (6, -3, 2),
-            (5, -2, 2),
-            (6, -2, 2),
-            (5, 0, 2),
-            (5, 0, 3)
-        ] if state[0] in (None, 'cyan') else [ # layer coords of the access chest
+        containers = CONTAINERS if state[0] in (None, 'cyan') else [ # layer coords of the access chest
             (5, 0, 2),
             (5, 0, 3)
         ]

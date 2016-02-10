@@ -16,11 +16,22 @@ NUM_SLOTS = {
     'minecraft:trapped_chest': 27
 }
 
-def comparator_signal(block, *, items_data=None):
+def comparator_signal(block, other_block=None, *, items_data=None):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
-    if block['id'] in NUM_SLOTS:
+    if other_block is not None:
+        assert block['id'] == other_block['id']
+        assert other_block['id'] in ('minecraft:chest', 'minecraft:trapped_chest')
+        def fullness(slot):
+            item = Item.from_slot(slot, items_data=items_data)
+            return slot['Count'] / item.max_stack_size()
+
+        inventory = block['tileEntity']['Items'] + other_block['tileEntity']['Items']
+        if sum(item['Count'] for item in inventory) == 0:
+            return 0
+        return int(1 + 14 * sum(map(fullness, inventory)) / 54)
+    elif block['id'] in NUM_SLOTS:
         def fullness(slot):
             item = Item.from_slot(slot, items_data=items_data)
             return slot['Count'] / item.max_stack_size()
@@ -56,7 +67,7 @@ def comparator_signal(block, *, items_data=None):
         }
         return record_signals[block['tileEntity']['RecordItem']['id']]
     else:
-        raise NotImplementedError('Comparator signal for {} NYI'.format(block['id'])) #TODO double chest, detector rail, item frame
+        raise NotImplementedError('Comparator signal for {} NYI'.format(block['id'])) #TODO detector rail, item frame
 
 def stub_data_type(plugin, string_id, *, items_data=None):
     if items_data is None:
