@@ -607,7 +607,8 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                         # torch attached to the top of a block
                         if block['id'] != 'minecraft:torch':
                             return 'Block at {} {} {} should be a torch, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
-                        pass #TODO check facing
+                        if block['damage'] != 5: # attached to the block below
+                            return 'Torch at {} {} {} should be attached to the block below, is attached to the block {}'.format(exact_x, exact_y, exact_z, TORCH_FACINGS[block['damage']])
                     elif block_symbol == 'p':
                         # oak planks
                         if layer_y == -8 and (y == 6 or z < 4 or z < 6 and layer_z > 1):
