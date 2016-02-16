@@ -3,6 +3,7 @@ import alltheitems.__main__ as ati
 import api.v2
 import enum
 import json
+import numbers
 import re
 import xml.sax.saxutils
 
@@ -36,6 +37,8 @@ class Item:
             if 'id' not in item_stub:
                 raise ValueError('Missing item ID')
             self.stub = item_stub
+        elif isinstance(item_stub, Item):
+            self.stub = item_stub.stub
         else:
             raise TypeError('Cannot create an item from {}'.format(type(item_stub)))
         allowed_keys = {
@@ -59,6 +62,8 @@ class Item:
                 other = Item(other)
             except TypeError:
                 return False
+        if self.is_block != other.is_block:
+            return False
         if self.stub['id'] != other.stub['id']:
             return False
         for attr in ('damage', 'effect', 'tagValue'):
@@ -71,6 +76,9 @@ class Item:
                 if attr in other.stub:
                     return False
         return True
+
+    def __hash__(self):
+        return hash((self.is_block, self.stub['id']))
 
     def __str__(self):
         info = self.info()
@@ -131,6 +139,10 @@ class Item:
     def is_block(self):
         return False
 
+    @property
+    def is_lag_legal(self):
+        raise NotImplementedError() #TODO
+
     def link(self, link=True):
         if link is True:
             # derive link from item stub
@@ -186,16 +198,129 @@ class Item:
             result = 64 if result else 1
         return result
 
-    def renewability(self, *, lag=None):
+    def renewability(self, *, lag=None, visited=None):
         """Calculates renewability level (https://wiki.wurstmineberg.de/Renewability) for this type of block or item.
 
         Keyword-only arguments:
         lag -- A boolean or None, indicating whether to include latency-induced atomic genesis (https://wiki.wurstmineberg.de/Latency-induced_Atomic_Genesis) in the calculation. If None (the default), only include legal dupes.
+        visited -- Used internally for recursion.
 
         Returns:
         An instance of the Renewability enum.
         """
-        raise NotImplementedError() #TODO
+        if visited is None:
+            visited = {self: None}
+        else:
+            visited = visited.copy()
+            visited[self] = None
+
+        def recurse(stub, block=False):
+            item = (Block if block else Item)(stub)
+            if item in visited:
+                return visited[item]
+            visited[item] = item.renewability(lag=lag, visited=visited)
+            return visited[item]
+
+        info = self.info()
+        if info.get('itemID') is None:
+            return Renewability.unobtainable
+        result = Renewability.unobtainable
+        for method in info.get('obtaining', []):
+            if method['type'] == 'craftingShaped' or method['type'] == 'craftingShapeless':
+                recipe_renewability = Renewability.renewable # crafting is manual
+                for ingredient in method['recipe']:
+                    if ingredient is None:
+                        continue # empty slot
+                    ingredient_renewability = recurse(ingredient)
+                    if ingredient_renewability is None:
+                        # a circle in the recipe graph, assume unobtainable
+                        recipe_renewability = Renewability.unobtainable
+                    else:
+                        recipe_renewability = min(recipe_renewability, ingredient_renewability)
+                result = max(result, recipe_renewability)
+            elif method['type'] == 'smelting':
+                # assume fully_automatic fuel exists
+                ingredient_renewability = recurse(method['input'])
+                if ingredient_renewability is not None:
+                    result = max(result, ingredient_renewability)
+            elif method['type'] == 'entityDeath':
+                # assumes all entities can be spawned fully automatically
+                #TODO remove this assumption, requires additional data in entities.json
+                if method.get('requires') in ('player', 'chargedCreeper', 'whileUsing', 'noCrash', 'whileWearing', 'halloween'):
+                    # these require manual player interaction
+                    result = max(result, Renewability.renewable)
+                else:
+                    result = max(result, Renewability.fully_automatic)
+            elif method['type'] == 'mining':
+                raise NotImplementedError('mining renewability not implemented') #TODO
+            elif method['type'] == 'structure':
+                continue # structure is for blocks
+            elif method['type'] == 'trading':
+                raise NotImplementedError('trading renewability not implemented') #TODO
+            elif method['type'] == 'fishing':
+                raise NotImplementedError('fishing renewability not implemented') #TODO
+            elif method['type'] == 'brewing':
+                raise NotImplementedError('brewing renewability not implemented') #TODO
+            elif method['type'] == 'bonusChest':
+                raise NotImplementedError('bonusChest renewability not implemented') #TODO
+            elif method['type'] == 'chest':
+                raise NotImplementedError('chest renewability not implemented') #TODO
+            elif method['type'] == 'natural':
+                continue # natural is for blocks
+            elif method['type'] == 'plantGrowth':
+                continue # plantGrowth is for blocks
+            elif method['type'] == 'modifyBlock':
+                continue # modifyBlock is for blocks
+            elif method['type'] == 'useItem':
+                if method.get('createsBlock', False):
+                    continue
+                source_renewability = recurse(method['item'])
+                if source_renewability is None:
+                    continue
+                if 'onBlock' in method:
+                    block_renewability = recurse(method['onBlock'])
+                    if block_renewability is None:
+                        continue
+                    if isinstance(method['onBlock'], dict) and method['onBlock'].get('consumed', False):
+                        source_renewability = min(source_renewability, block_renewability)
+                result = max(result, min(source_renewability, Renewability.manual))
+            elif method['type'] == 'liquids':
+                continue # liquids is for blocks
+            elif method['type'] == 'special':
+                if method.get('block', False):
+                    continue
+                raise NotImplementedError('special renewability not implemented') #TODO
+            else:
+                raise NotImplementedError('Method of obtaining not implemented: {!r}'.format(method['type']))
+        drops_self = info.get('dropsSelf', 1)
+        if isinstance(drops_self, numbers.Number):
+            if drops_self > 0:
+                visited[Block(self)] = Block(self).renewability(lag=lag, visited=visited)
+                if visited[Block(self)] is not None:
+                    result = max(result, visited[Block(self)])
+        else:
+            if isinstance(drops_self, dict):
+                drops_self = [drops_self]
+            for mining_info in drops_self:
+                if isinstance(mining_info, dict) and 'id' in mining_info:
+                    # tool item stub
+                    raise NotImplementedError('Tool item stub not implemented for dropsSelf') #TODO
+                elif isinstance(mining_info, dict):
+                    # mining info
+                    raise NotImplementedError('Mining info not implemented for dropsSelf') #TODO
+                else:
+                    # default tool, assume renewable
+                    visited[Block(self)] = Block(self).renewability(lag=lag, visited=visited)
+                    if visited[Block(self)] is not None:
+                        result = max(result, min(Renewability.renewable, visited[Block(self)]))
+        raise NotImplementedError('dropsSelf renewability not implemented') #TODO
+        if lag is True:
+            if result >= Renewability.obtainable:
+                result = Renewability.fully_automatic
+        elif lag is None:
+            if result >= Renewability.obtainable and self.is_lag_legal:
+                result = Renewability.fully_automatic
+        return result
 
 class Block(Item):
     @classmethod
@@ -205,6 +330,59 @@ class Block(Item):
     @property
     def is_block(self):
         return True
+
+    @property
+    def is_lag_legal(self):
+        raise NotImplementedError('Cannot dupe blocks with latency-induced atomic genesis')
+
+    def renewability(self, *, lag=None, visited=None):
+        info = self.info()
+        if info.get('blockID') is None:
+            return Renewability.unobtainable
+        result = Renewability.unobtainable
+        for method in info.get('obtaining', []):
+            if method['type'] == 'craftingShaped':
+                continue # craftingShaped is for items
+            elif method['type'] == 'craftingShapeless':
+                continue # craftingShapeless is for items
+            elif method['type'] == 'smelting':
+                continue # smelting is for items
+            elif method['type'] == 'entityDeath':
+                continue # entityDeath is for items
+            elif method['type'] == 'mining':
+                continue # mining is for items
+            elif method['type'] == 'structure':
+                raise NotImplementedError('structure renewability not implemented') #TODO
+            elif method['type'] == 'trading':
+                continue # trading is for items
+            elif method['type'] == 'fishing':
+                continue # fishing is for items
+            elif method['type'] == 'brewing':
+                continue # brewing is for items
+            elif method['type'] == 'bonusChest':
+                continue # bonusChest is for items
+            elif method['type'] == 'chest':
+                continue # chest is for items
+            elif method['type'] == 'natural':
+                raise NotImplementedError('natural renewability not implemented') #TODO
+            elif method['type'] == 'plantGrowth':
+                raise NotImplementedError('plantGrowth renewability not implemented') #TODO
+            elif method['type'] == 'modifyBlock':
+                raise NotImplementedError('modifyBlock renewability not implemented') #TODO
+            elif method['type'] == 'useItem':
+                if not method['createsBlock']:
+                    continue
+                raise NotImplementedError('useItem renewability not implemented') #TODO
+            elif method['type'] == 'liquids':
+                raise NotImplementedError('liquids renewability not implemented') #TODO
+            elif method['type'] == 'special':
+                if not method['block']:
+                    continue
+                raise NotImplementedError('special renewability not implemented') #TODO
+            else:
+                raise NotImplementedError('Method of obtaining not implemented: {!r}'.format(method['type']))
+        raise NotImplementedError('whenPlaced renewability not implemented') #TODO
+        return result
 
 def comparator_signal(block, other_block=None, *, items_data=None):
     """Calculates the redstone signal strength a comparator attached to this block would produce.
@@ -381,9 +559,9 @@ def info_from_stub(item_stub, block=False): #TODO take an optional items_data ar
         else:
             raise ValueError('The {} {} has no tag variants.'.format('block' if block else 'item', item_stub['id']))
     elif 'damageValues' in item_info:
-        raise ValueError('Must specify damage')
+        raise ValueError('Must specify damage for {}'.format(item_stub['id']))
     elif 'effects' in item_info:
-        raise ValueError('Must specify effect')
+        raise ValueError('Must specify effect for {}'.format(item_stub['id']))
     elif 'tagPath' in item_info:
-        raise ValueError('Must specify tag value')
+        raise ValueError('Must specify tag value for {}'.format(item_stub['id']))
     return item_info
