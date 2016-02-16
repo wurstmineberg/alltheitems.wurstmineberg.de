@@ -686,7 +686,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
         access_chest_fill_level = alltheitems.item.comparator_signal(north_half, south_half)
         bottom_dropper_fill_level = alltheitems.item.comparator_signal(block_at(*layer_coords(5, -7, 3), chunk_cache=chunk_cache))
         if access_chest_fill_level < 2 and bottom_dropper_fill_level > 2:
-            return 'Access chest is {}empty but there are items stuck in the storage dropper at {} {} {}.'.format('' if access_chest_fill_level == 0 else 'almost ', total_items)
+            return 'Access chest is {}empty but there are items stuck in the storage dropper at {} {} {}.'.format('' if access_chest_fill_level == 0 else 'almost ', *layer_coords(5, -7, 3))
 
 def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None, allow_cache=True):
     if items_data is None:
