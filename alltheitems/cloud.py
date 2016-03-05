@@ -227,8 +227,8 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
             else:
                 if not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
                     return 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
-            if alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot) and slot['Count'] > 1:
-                return 'Too many Ender pearls in slot {}.'.format(slot['Slot'])
+                if slot['Count'] > 1:
+                    return 'Too many Ender pearls in slot {}.'.format(slot['Slot'])
         if len(empty_slots) > 0:
             if len(empty_slots) == 5:
                 return 'Sorting hopper is empty.'
