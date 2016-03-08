@@ -235,7 +235,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
             elif len(empty_slots) == 1:
                 return 'Slot {} of the sorting hopper is empty.'.format(next(iter(empty_slots)))
             else:
-                return 'Some slots in the sorting hopper are empty: {}.'.format(join(empty_slots))
+                return 'Some slots in the sorting hopper are empty: {}.'.format(', '.join(empty_slots))
     if exists:
         # error check: wrong items in access chest
         for slot in itertools.chain(north_half['tileEntity']['Items'], south_half['tileEntity']['Items']):
@@ -746,7 +746,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             state = 'orange', 'SmartChest droppers do not exist.', None
     elif len(missing_droppers) > 1:
         if state[0] is None:
-            state = 'orange', 'SmartChest droppers at y={} do not exist.'.format(missing_droppers), None
+            state = 'orange', 'SmartChest droppers at y={} do not exist.'.format(', y='.join(missing_droppers)), None
     elif len(missing_droppers) == 1:
         if state[0] is None:
             state = 'orange', 'SmartChest dropper at y={} does not exist, is {}.'.format(next(iter(missing_droppers)), block_at(base_x, dropper_y, base_z)['id']), None
