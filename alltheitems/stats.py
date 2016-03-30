@@ -60,11 +60,11 @@ def index():
                 <tr>
                     <th class="item-image">&nbsp;</th>
                     <th class="item-name">Item</th>
-                    <th class="count">Blocks</th>
-                    <th class="count"><abbr title="Player inventories only. Mob inventories are counted as “other”.">Inventories</abbr></th>
-                    <th class="count">Containers</th>
-                    <th class="count">Dropped</th>
-                    <th class="count">Other</th>
+                    <th class="count"><abbr title="Blocks placed or generated in the world.">Blocks</abbr></th>
+                    <th class="count"><abbr title="Player inventories and Ender chests.">Inventories</abbr></th>
+                    <th class="count"><abbr title="Chests, droppers, furnaces, hopper minecarts, item frames…">Containers</abbr></th>
+                    <th class="count"><abbr title="Item stack entities lying around on the ground somewhere, waiting to despawn.">Dropped</abbr></th>
+                    <th class="count"><abbr title="Mob inventories, as well as item frames, boats, and minecarts (but not their inventories).</abbr></th>
                     <th class="count">Total</th>
                 </tr>
             </thead>
