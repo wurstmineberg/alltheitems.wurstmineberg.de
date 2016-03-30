@@ -44,12 +44,12 @@ def index():
         counts = {}
         for entry in cache:
             try:
-                item = alltheitems.item.Item(entry['itemStub'])
+                item = alltheitems.item.Item(entry['itemStub'], items_data=items_data)
                 item.info()
             except ValueError:
                 item = None
             try:
-                block = alltheitems.item.Block(entry['itemStub'])
+                block = alltheitems.item.Block(entry['itemStub'], items_data=items_data)
                 block.info()
             except ValueError:
                 block = None
