@@ -387,3 +387,27 @@ def info_from_stub(item_stub, block=False): #TODO take an optional items_data ar
     elif 'tagPath' in item_info:
         raise ValueError('Must specify tag value')
     return item_info
+
+def all(items_data=None):
+    """Yields (Block, Item) tuples for each distinct type of block and item. Yields (NoneType, Item) for non-block items, and (Block, NoneType) for non-item blocks."""
+    if items_data is None:
+        with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+            items_data = json.load(items_file)
+    for plugin_name, plugin in items_data.items():
+        for item_id, item in plugin.items():
+            if 'damageValues' in item_info:
+                for damage_str in item_info['damageValues']:
+                    stub = {'id': '{}:{}'.format(plugin_name, item_id), 'damage': int(damage_str)}
+                    yield (Block(stub, items_data=items_data) if 'blockID' in item else None, Item(stub, items_data=items_data) if 'itemID' in item else None)
+            elif 'effects' in item_info:
+                for effect_plugin_name, effect_plugin in item_info['effects'].items():
+                    for effect_id in effect_plugin:
+                        stub = {'id': '{}:{}'.format(plugin_name, item_id), 'effect': '{}:{}'.format(effect_plugin_name, effect_id)}
+                        yield (Block(stub, items_data=items_data) if 'blockID' in item else None, Item(stub, items_data=items_data) if 'itemID' in item else None)
+            elif 'tagPath' in item_info:
+                for tag_value in item_info['tagVariants']:
+                    stub = {'id': '{}:{}'.format(plugin_name, item_id), 'tagValue': tag_value}
+                    yield (Block(stub, items_data=items_data) if 'blockID' in item else None, Item(stub, items_data=items_data) if 'itemID' in item else None)
+            else:
+                stub = {'id': '{}:{}'.format(plugin_name, item_id)}
+                yield (Block(stub, items_data=items_data) if 'blockID' in item else None, Item(stub, items_data=items_data) if 'itemID' in item else None)

@@ -294,5 +294,11 @@ def show_item_by_tag(plugin, item_id, tag_value):
         'tagValue': None if tag_value == 'null' else tag_value
     })
 
+@application.route('/stats')
+def stats_page():
+    """A page listing block and item frequencies on the main world."""
+    import alltheitems.stats
+    return alltheitems.stats.index()
+
 if __name__ == '__main__':
     bottle.run(app=application, host='0.0.0.0', port=8081)
