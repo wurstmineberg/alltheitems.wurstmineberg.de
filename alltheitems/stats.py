@@ -25,6 +25,10 @@ def index():
             }
         </style>"""
 
+        def sort_key(pair):
+            (block, item), (blocks, inventories, containers, dropped, other) = pair
+            return -sum(row[1]), block.stub['id'] if item is None else item.stub['id']
+
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
@@ -50,7 +54,7 @@ def index():
                 </tr>
             </thead>
             <tbody>"""
-        for (block, item), (blocks, inventories, containers, dropped, other) in sorted(counts.items(), key=lambda row: -sum(row[1])):
+        for (block, item), (blocks, inventories, containers, dropped, other) in sorted(counts.items(), key=sort_key):
             yield bottle.template("""
                 <tr>
                     <td class="item-image">{{!item.image()}}</td>
