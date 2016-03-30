@@ -104,4 +104,4 @@ if __name__ == '__main__':
             'other': other
         })
     with out_file.open('w') as f:
-        json.dump(counts, f) #TODO
+        json.dump(counts, f, sort_keys=True, indent=4)
