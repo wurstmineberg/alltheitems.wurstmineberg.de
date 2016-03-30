@@ -1,7 +1,14 @@
+#!/usr/bin/env python3
+
+import sys
+
+sys.path.append('/opt/py')
+
 import alltheitems.__main__ as ati
 
 import bottle
 import json
+import pathlib
 
 import alltheitems.item
 
@@ -32,21 +39,20 @@ def index():
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
+        with (ati.cache_root / 'item-counts.json').open() as cache_f:
+            cache = json.load(cache_f)
         counts = {}
-        for block, item in alltheitems.item.all():
-            blocks = 0 #TODO
-            inventories = 0 #TODO
-            containers = 0 #TODO
-            dropped = 0 #TODO
-            other = 0 #TODO
-            counts[block, item] = (blocks, inventories, containers, dropped, other)
+        for entry in cache:
+            item = alltheitems.item.Item(entry['itemStub'])
+            key = (Block(item) if 'blockID' in item.info() else None, item if 'itemID' in item.info() else None)
+            counts[key] = (entry['blocks'], entry['inventories'], entry['containers'], entry['dropped'], entry['other'])
         yield """<table class="stats-table table table-responsive">
             <thead>
                 <tr>
                     <th class="item-image">&nbsp;</th>
                     <th class="item-name">Item</th>
                     <th class="count">Blocks</th>
-                    <th class="count">Inventories</th>
+                    <th class="count"><abbr title="Player inventories only. Mob inventories are counted as “other”.">Inventories</abbr></th>
                     <th class="count">Containers</th>
                     <th class="count">Dropped</th>
                     <th class="count">Other</th>
@@ -70,3 +76,23 @@ def index():
         yield '</tbody></table>'
     yield from ati.html_exceptions(body())
     yield ati.footer()
+
+if __name__ == '__main__':
+    out_file = pathlib.Path(sys.argv[1])
+    counts = []
+    for block, item in alltheitems.item.all():
+        blocks = 0 #TODO
+        inventories = 0 #TODO
+        containers = 0 #TODO
+        dropped = 0 #TODO
+        other = 0 #TODO
+        counts.append({
+            'itemStub': (block if item is None else item).stub,
+            'blocks': blocks,
+            'inventories': inventories,
+            'containers': containers,
+            'dropped': dropped,
+            'other': other
+        })
+    with out_file.open('w') as f:
+        json.dump(counts, f) #TODO

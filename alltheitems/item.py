@@ -32,7 +32,9 @@ class Renewability(alltheitems.util.OrderedEnum):
 @functools.total_ordering
 class Item:
     def __init__(self, item_stub, *, items_data=None):
-        if isinstance(item_stub, str):
+        if isinstance(item_stub, Item):
+            self.stub = item_stub.stub
+        elif isinstance(item_stub, str):
             self.stub = {'id': item_stub}
         elif isinstance(item_stub, dict):
             if 'id' not in item_stub:
