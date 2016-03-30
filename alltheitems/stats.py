@@ -44,7 +44,7 @@ def index():
         counts = {}
         for entry in cache:
             item = alltheitems.item.Item(entry['itemStub'])
-            key = (Block(item) if 'blockID' in item.info() else None, item if 'itemID' in item.info() else None)
+            key = (alltheitems.item.Block(item) if 'blockID' in item.info() else None, item if 'itemID' in item.info() else None)
             counts[key] = (entry['blocks'], entry['inventories'], entry['containers'], entry['dropped'], entry['other'])
         yield """<table class="stats-table table table-responsive">
             <thead>
