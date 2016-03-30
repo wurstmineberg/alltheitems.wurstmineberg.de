@@ -49,7 +49,7 @@ def index():
                 </tr>
             </thead>
             <tbody>"""
-        for (block, item), (blocks, inventories, containers, dropped, other) in sorted(states.items(), key=lambda row: -sum(row[1])):
+        for (block, item), (blocks, inventories, containers, dropped, other) in sorted(counts.items(), key=lambda row: -sum(row[1])):
             yield bottle.template("""
                 <tr>
                     <td class="item-image">{{!item.image()}}</td>
