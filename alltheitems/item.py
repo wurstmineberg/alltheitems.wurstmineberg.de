@@ -72,6 +72,9 @@ class Item:
                     return False
         return True
 
+    def __hash__(self):
+        return hash(self.stub['id'])
+
     def __str__(self):
         info = self.info()
         if 'name' in info:
