@@ -2,6 +2,7 @@ import alltheitems.__main__ as ati
 
 import api.v2
 import enum
+import functools
 import json
 import re
 import xml.sax.saxutils
@@ -28,6 +29,7 @@ class Renewability(alltheitems.util.OrderedEnum):
     automatic = 4
     fully_automatic = 5
 
+@functools.total_ordering
 class Item:
     def __init__(self, item_stub, *, items_data=None):
         if isinstance(item_stub, str):
@@ -74,6 +76,29 @@ class Item:
 
     def __hash__(self):
         return hash(self.stub['id'])
+
+    def __lt__(self, other):
+        if not isinstance(other, Item):
+            try:
+                other = Item(other)
+            except TypeError:
+                return NotImplemented
+        if self.stub['id'] < other.stub['id']:
+            return True
+        if self.stub['id'] > other.stub['id']:
+            return False
+        for attr in ('damage', 'effect', 'tagValue'):
+            if attr in self.stub:
+                if attr not in other.stub:
+                    return False
+                if self.stub[attr] < other.stub[attr]:
+                    return True
+                if self.stub[attr] > other.stub[attr]:
+                    return False
+            else:
+                if attr in other.stub:
+                    return True
+        return False
 
     def __str__(self):
         info = self.info()

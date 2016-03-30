@@ -27,7 +27,7 @@ def index():
 
         def sort_key(pair):
             (block, item), counts = pair
-            return -sum(counts), block.stub['id'] if item is None else item.stub['id']
+            return -sum(counts), block if item is None else item
 
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
