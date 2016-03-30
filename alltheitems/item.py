@@ -394,20 +394,20 @@ def all(items_data=None):
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
     for plugin_name, plugin in items_data.items():
-        for item_id, item in plugin.items():
+        for item_id, item_info in plugin.items():
             if 'damageValues' in item_info:
                 for damage_str in item_info['damageValues']:
                     stub = {'id': '{}:{}'.format(plugin_name, item_id), 'damage': int(damage_str)}
-                    yield (Block(stub, items_data=items_data) if 'blockID' in item else None, Item(stub, items_data=items_data) if 'itemID' in item else None)
+                    yield (Block(stub, items_data=items_data) if 'blockID' in item_info else None, Item(stub, items_data=items_data) if 'itemID' in item_info else None)
             elif 'effects' in item_info:
                 for effect_plugin_name, effect_plugin in item_info['effects'].items():
                     for effect_id in effect_plugin:
                         stub = {'id': '{}:{}'.format(plugin_name, item_id), 'effect': '{}:{}'.format(effect_plugin_name, effect_id)}
-                        yield (Block(stub, items_data=items_data) if 'blockID' in item else None, Item(stub, items_data=items_data) if 'itemID' in item else None)
+                        yield (Block(stub, items_data=items_data) if 'blockID' in item_info else None, Item(stub, items_data=items_data) if 'itemID' in item_info else None)
             elif 'tagPath' in item_info:
                 for tag_value in item_info['tagVariants']:
                     stub = {'id': '{}:{}'.format(plugin_name, item_id), 'tagValue': tag_value}
-                    yield (Block(stub, items_data=items_data) if 'blockID' in item else None, Item(stub, items_data=items_data) if 'itemID' in item else None)
+                    yield (Block(stub, items_data=items_data) if 'blockID' in item_info else None, Item(stub, items_data=items_data) if 'itemID' in item_info else None)
             else:
                 stub = {'id': '{}:{}'.format(plugin_name, item_id)}
-                yield (Block(stub, items_data=items_data) if 'blockID' in item else None, Item(stub, items_data=items_data) if 'itemID' in item else None)
+                yield (Block(stub, items_data=items_data) if 'blockID' in item_info else None, Item(stub, items_data=items_data) if 'itemID' in item_info else None)
