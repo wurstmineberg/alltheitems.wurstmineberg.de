@@ -43,8 +43,17 @@ def index():
             cache = json.load(cache_f)
         counts = {}
         for entry in cache:
-            item = alltheitems.item.Item(entry['itemStub'])
-            key = (alltheitems.item.Block(item) if 'blockID' in item.info() else None, item if 'itemID' in item.info() else None)
+            try:
+                item = alltheitems.item.Item(entry['itemStub'])
+                item.info()
+            except ValueError:
+                item = None
+            try:
+                block = alltheitems.item.Block(entry['itemStub'])
+                block.info()
+            except ValueError:
+                block = None
+            key = (block, item)
             counts[key] = (entry['blocks'], entry['inventories'], entry['containers'], entry['dropped'], entry['other'])
         yield """<table class="stats-table table table-responsive">
             <thead>
