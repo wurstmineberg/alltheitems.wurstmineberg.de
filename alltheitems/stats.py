@@ -36,10 +36,25 @@ def index():
             (block, item), counts = pair
             return -sum(counts), block if item is None else item
 
-        chunk_cache = {}
+        yield """<table class="stats-table table table-responsive">
+            <thead>
+                <tr>
+                    <th class="item-image">&nbsp;</th>
+                    <th class="item-name">Item</th>
+                    <th class="count"><abbr title="Blocks placed or generated in the world.">Blocks</abbr></th>
+                    <th class="count"><abbr title="Player inventories and Ender chests.">Inventories</abbr></th>
+                    <th class="count"><abbr title="Chests, droppers, furnaces, hopper minecarts, item frames…">Containers</abbr></th>
+                    <th class="count"><abbr title="Item stack entities lying around on the ground somewhere, waiting to despawn.">Dropped</abbr></th>
+                    <th class="count"><abbr title="Mob inventories, as well as item frames, boats, and minecarts (but not their inventories).">Other</abbr></th>
+                    <th class="count">Total</th>
+                </tr>
+            </thead>
+            <tbody>"""
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
-        with (ati.cache_root / 'item-counts.json').open() as cache_f:
+        cache_path = ati.cache_root / 'item-counts.json'
+        yield '<p>Block and item counts on the main world as of {:%Y-%m-%d %H:%M:%S} UTC:</p>'.format(datetime.datetime.utcfromtimestamp(cache_path.stat().st_mtime))
+        with cache_path.open() as cache_f:
             cache = json.load(cache_f)
         counts = {}
         for entry in cache:
@@ -55,20 +70,6 @@ def index():
                 block = None
             key = (block, item)
             counts[key] = (entry['blocks'], entry['inventories'], entry['containers'], entry['dropped'], entry['other'])
-        yield """<table class="stats-table table table-responsive">
-            <thead>
-                <tr>
-                    <th class="item-image">&nbsp;</th>
-                    <th class="item-name">Item</th>
-                    <th class="count"><abbr title="Blocks placed or generated in the world.">Blocks</abbr></th>
-                    <th class="count"><abbr title="Player inventories and Ender chests.">Inventories</abbr></th>
-                    <th class="count"><abbr title="Chests, droppers, furnaces, hopper minecarts, item frames…">Containers</abbr></th>
-                    <th class="count"><abbr title="Item stack entities lying around on the ground somewhere, waiting to despawn.">Dropped</abbr></th>
-                    <th class="count"><abbr title="Mob inventories, as well as item frames, boats, and minecarts (but not their inventories).">Other</abbr></th>
-                    <th class="count">Total</th>
-                </tr>
-            </thead>
-            <tbody>"""
         for (block, item), (blocks, inventories, containers, dropped, other) in sorted(counts.items(), key=sort_key):
             yield bottle.template("""
                 <tr>
