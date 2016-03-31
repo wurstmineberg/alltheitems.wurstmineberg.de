@@ -113,7 +113,7 @@ if __name__ == '__main__':
         print(flush=True)
     print('counting player inventories', end='\r', flush=True)
     inv_counts = collections.defaultdict(lambda: 0)
-    for player_data_file in (minecraft.World().world_path / 'playerdata').iterdir()
+    for player_data_file in (minecraft.World().world_path / 'playerdata').iterdir():
         player_data = api.util2.nbtfile_to_dict(player_data_file)
         for inventory_type in ('Inventory', 'EnderItems'):
             for slot in player_data[inventory_type]:
