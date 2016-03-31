@@ -98,7 +98,8 @@ if __name__ == '__main__':
         items_data = json.load(items_file)
     block_counts = collections.defaultdict(lambda: 0)
     for dimension, columns in api.v2.api_chunk_overview(minecraft.World()).items():
-        for column in columns:
+        for i, column in enumerate(columns):
+            print('counting blocks: {} column {} of {}'.format(dimension, i + 1, len(columns)), end='\r', flush=True)
             chunk_x = column['x']
             chunk_z = column['z']
             for chunk_y in range(16):
@@ -108,6 +109,7 @@ if __name__ == '__main__':
                         for block in row:
                             block = alltheitems.item.Block.from_chunk(block, items_data=items_data)
                             block_counts[block] += 1
+        print(flush=True)
     counts = []
     for block, item in alltheitems.item.all():
         blocks = block_counts[block]
