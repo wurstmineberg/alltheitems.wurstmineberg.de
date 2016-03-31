@@ -9,7 +9,6 @@ import alltheitems.__main__ as ati
 import bottle
 import datetime
 import json
-import pathlib
 
 import alltheitems.item
 
@@ -89,10 +88,29 @@ def index():
     yield ati.footer()
 
 if __name__ == '__main__':
+    import api.v2
+    import collections
+    import minecraft
+    import pathlib
+
     out_file = pathlib.Path(sys.argv[1])
+    with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+        items_data = json.load(items_file)
+    block_counts = collections.defaultdict(lambda: 0)
+    for dimension, columns in api.v2.api_chunk_overview(minecraft.World()).items():
+        for column in columns:
+            chunk_x = column['x']
+            chunk_z = column['z']
+            for chunk_y in range(16):
+                section = getattr(api.v2, 'api_chunk_info_{}'.format(dimension))(minecraft.World(), chunk_x, chunk_y, chunk_z)
+                for layer in section:
+                    for row in layer:
+                        for block in row:
+                            block = alltheitems.item.Block.from_chunk(block, items_data=items_data)
+                            block_counts[block] += 1
     counts = []
     for block, item in alltheitems.item.all():
-        blocks = 0 #TODO
+        blocks = block_counts[block]
         inventories = 0 #TODO
         containers = 0 #TODO
         dropped = 0 #TODO

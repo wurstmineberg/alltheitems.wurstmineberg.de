@@ -229,6 +229,24 @@ class Item:
 
 class Block(Item):
     @classmethod
+    def from_chunk(cls, chunk_block, *, items_data=None):
+        """Parses block info as returned by the api.v2.api_chunk_info_<dimension> endpoints"""
+        item_stub = {'id': chunk_block['id']}
+        plugin, string_id = chunk_block['id'].split(':', 1)
+        data_type = stub_data_type(plugin, string_id, items_data=items_data)
+        if data_type is None:
+            pass
+        elif data_type == 'damage':
+            item_stub['damage'] = chunk_block['damage']
+        elif data_type == 'effect':
+            raise NotImplementedError('Parsing block info with effect data not implemented')
+        elif data_type == 'tagValue':
+            raise NotImplementedError('Parsing block info with tag variants not implemented')
+        else:
+            raise NotImplementedError('Unknown data type: {!r}'.format(data_type))
+        return cls(item_stub, items_data=items_data)
+
+    @classmethod
     def from_slot(cls, slot):
         raise NotImplementedError('Cannot create a block from a slot')
 
