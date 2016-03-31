@@ -139,7 +139,7 @@ class Item:
         elif data_type == 'effect':
             item_stub['effect'] = slot['tag']['Potion']
         elif data_type == 'tagValue':
-            tag_path = self.items_data[plugin][string_id]['tagPath']
+            tag_path = items_data[plugin][string_id]['tagPath']
             try:
                 tag = slot['tag']
                 for tag_path_elt in tag_path:
