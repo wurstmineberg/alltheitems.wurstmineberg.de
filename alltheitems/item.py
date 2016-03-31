@@ -231,7 +231,10 @@ class Block(Item):
     @classmethod
     def from_chunk(cls, chunk_block, *, items_data=None):
         """Parses block info as returned by the api.v2.api_chunk_info_<dimension> endpoints"""
-        item_stub = {'id': chunk_block['id']}
+        try:
+            item_stub = {'id': chunk_block['id']}
+        except:
+            return cls('minecraft:air', items_data=items_data)
         plugin, string_id = chunk_block['id'].split(':', 1)
         data_type = stub_data_type(plugin, string_id, items_data=items_data)
         if data_type is None:
