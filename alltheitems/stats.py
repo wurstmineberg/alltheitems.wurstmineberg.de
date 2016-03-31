@@ -88,6 +88,7 @@ def index():
     yield ati.footer()
 
 if __name__ == '__main__':
+    import api.util2
     import api.v2
     import collections
     import minecraft
@@ -110,10 +111,19 @@ if __name__ == '__main__':
                             block = alltheitems.item.Block.from_chunk(block, items_data=items_data)
                             block_counts[block] += 1
         print(flush=True)
+    print('counting player inventories', end='\r', flush=True)
+    inv_counts = collections.defaultdict(lambda: 0)
+    for player_data_file in (minecraft.World().world_path / 'playerdata').iterdir()
+        player_data = api.util2.nbtfile_to_dict(player_data_file)
+        for inventory_type in ('Inventory', 'EnderItems'):
+            for slot in player_data[inventory_type]:
+                item = alltheitems.item.Item.from_slot(slot, items_data=items_data)
+                inv_counts[item] += slot['Count']
+    print(flush=True)
     counts = []
     for block, item in alltheitems.item.all():
         blocks = block_counts[block]
-        inventories = 0 #TODO
+        inventories = inv_counts[item]
         containers = 0 #TODO
         dropped = 0 #TODO
         other = 0 #TODO
