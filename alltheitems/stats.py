@@ -117,7 +117,10 @@ if __name__ == '__main__':
         player_data = api.util2.nbtfile_to_dict(player_data_file)
         for inventory_type in ('Inventory', 'EnderItems'):
             for slot in player_data[inventory_type]:
-                item = alltheitems.item.Item.from_slot(slot, items_data=items_data)
+                try:
+                    item = alltheitems.item.Item.from_slot(slot, items_data=items_data)
+                except:
+                    continue
                 inv_counts[item] += slot['Count']
     print(flush=True)
     counts = []
