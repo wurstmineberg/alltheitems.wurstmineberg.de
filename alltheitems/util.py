@@ -23,7 +23,7 @@ class OrderedEnum(enum.Enum):
         return NotImplemented
 
 def format_num(number, ord=False):
-    result = ''.join(list(reversed('\u2009'.join(''.join(l) for l in more_itertools.chunked(reversed(str(number)), 3)))))
+    result = ''.join(list(reversed('\u202f'.join(''.join(l) for l in more_itertools.chunked(reversed(str(number)), 3)))))
     if ord:
         result += ordinal(number)
     return result
