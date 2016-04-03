@@ -17,28 +17,39 @@ import sys
 
 bottle.debug()
 
-try:
-    import uwsgi
-    is_dev = uwsgi.opt['is_dev'] == 'true' or uwsgi.opt['is_dev'] == b'true'
-except:
-    is_dev = False
 
-if is_dev:
-    assets_root = pathlib.Path('/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/branch/dev')
-    cache_root = pathlib.Path('/opt/wurstmineberg/dev-alltheitems-cache')
-    document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev')
-    host = 'dev.wurstmineberg.de'
-    sys.path.insert(1, '/opt/git/github.com/wurstmineberg/api.wurstmineberg.de/branch/dev')
-    import api.util
-    api.util.CONFIG_PATH = pathlib.Path('/opt/wurstmineberg/config/devapi.json')
-    api.util.CONFIG = api.util.config()
-    import api.v2
-else:
-    assets_root = pathlib.Path('/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master')
-    cache_root = pathlib.Path('/opt/wurstmineberg/alltheitems-cache')
-    document_root = pathlib.Path('/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master')
-    host = 'wurstmineberg.de'
-    import api.v2
+#try:
+    #import uwsgi
+    #is_dev = uwsgi.opt['is_dev'] == 'true' or uwsgi.opt['is_dev'] == b'true'
+#except:
+    #is_dev = False
+
+
+CONFIG_TYPES = {
+    "assets_root": pathlib.Path,
+    "cache_root": pathlib.Path,
+    "document_root": pathlib.Path,
+}
+
+from wmb import get_config, from_assets
+
+CONFIG = get_config("alltheitems", base = from_assets(__file__), value_types = CONFIG_TYPES)
+
+assets_root = CONFIG["assets_root"]
+cache_root = CONFIG["cache_root"]
+document_root = CONFIG["document_root"]
+host = CONFIG["host"]
+
+#TODO: restore this functionality
+#if is_dev:
+    #TODO: load this from config
+    #sys.path.insert(1, '/opt/git/github.com/wurstmineberg/api.wurstmineberg.de/branch/dev')
+    #import api.util
+    #api.util.CONFIG_PATH = pathlib.Path('/opt/wurstmineberg/config/devapi.json')
+    #api.util.CONFIG = api.util.config()
+
+import api.v2
+
 
 def header(*, title='All The Items'):
     if is_dev:
