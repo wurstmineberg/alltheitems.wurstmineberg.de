@@ -12,6 +12,7 @@ import re
 import xml.sax.saxutils
 
 import alltheitems.item
+import alltheitems.util
 import alltheitems.world
 
 class FillLevel:
@@ -235,7 +236,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
             elif len(empty_slots) == 1:
                 return 'Slot {} of the sorting hopper is empty.'.format(next(iter(empty_slots)))
             else:
-                return 'Some slots in the sorting hopper are empty: {}.'.format(', '.join(str(slot) for slot in empty_slots))
+                return 'Some slots in the sorting hopper are empty: {}.'.format(alltheitems.util.join(empty_slots))
     if exists:
         # error check: wrong items in access chest
         for slot in itertools.chain(north_half['tileEntity']['Items'], south_half['tileEntity']['Items']):
@@ -880,7 +881,7 @@ def index(allow_cache=True):
 
             yield bottle.template("""
                 %import itertools
-                <h2 id="floor{{y}}">{{y}}{{ati.ordinal(y)}} floor (y={{73 - 10 * y}})</h2>
+                <h2 id="floor{{y}}">{{y}}{{ordinal(y)}} floor (y={{73 - 10 * y}})</h2>
                 <table class="item-table" style="margin-left: auto; margin-right: auto;">
                     %for x in range(-3, 4):
                         %if x > -3:
@@ -925,7 +926,7 @@ def index(allow_cache=True):
                         %end
                     </tbody>
                 </table>
-            """, ati=ati, cell=cell, floor=floor, y=y)
+            """, ordinal=alltheitems.util.ordinal cell=cell, floor=floor, y=y)
         color_explanations = collections.OrderedDict([
             ('red', '<p>A red background means that there is something wrong with the chest. See the item info page for details.</p>'),
             ('gray', "<p>A gray background means that the chest hasn't been built yet or is still located somewhere else.</p>"),

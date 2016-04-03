@@ -11,6 +11,7 @@ import datetime
 import json
 
 import alltheitems.item
+import alltheitems.util
 
 def index():
     yield ati.header(title='Item stats')
@@ -75,14 +76,14 @@ def index():
                 <tr>
                     <td class="item-image">{{!item.image()}}</td>
                     <td class="item-name">{{!item.link_text()}}</td>
-                    <td class="count{{' muted' if blocks == 0 else ''}}">{{blocks}}</td>
-                    <td class="count{{' muted' if inventories == 0 else ''}}">{{inventories}}</td>
-                    <td class="count{{' muted' if containers == 0 else ''}}">{{containers}}</td>
-                    <td class="count{{' muted' if dropped == 0 else ''}}">{{dropped}}</td>
-                    <td class="count{{' muted' if other == 0 else ''}}">{{other}}</td>
-                    <td class="count{{' muted' if total == 0 else ''}}">{{total}}</td>
+                    <td class="count{{' muted' if blocks == 0 else ''}}">{{format_num(blocks)}}</td>
+                    <td class="count{{' muted' if inventories == 0 else ''}}">{{format_num(inventories)}}</td>
+                    <td class="count{{' muted' if containers == 0 else ''}}">{{format_num(containers)}}</td>
+                    <td class="count{{' muted' if dropped == 0 else ''}}">{{format_num(dropped)}}</td>
+                    <td class="count{{' muted' if other == 0 else ''}}">{{format_num(other)}}</td>
+                    <td class="count{{' muted' if total == 0 else ''}}">{{format_num(total)}}</td>
                 </tr>
-            """, item=block if item is None else item, blocks=blocks, inventories=inventories, containers=containers, dropped=dropped, other=other, total=blocks + inventories + containers + dropped + other)
+            """, format_num=alltheitems.util.format_num, item=block if item is None else item, blocks=blocks, inventories=inventories, containers=containers, dropped=dropped, other=other, total=blocks + inventories + containers + dropped + other)
         yield '</tbody></table>'
     yield from ati.html_exceptions(body())
     yield ati.footer()
@@ -107,8 +108,8 @@ if __name__ == '__main__':
                 section = getattr(api.v2, 'api_chunk_info_{}'.format(dimension))(minecraft.World(), chunk_x, chunk_y, chunk_z)
                 for layer in section:
                     for row in layer:
-                        for block in row:
-                            block = alltheitems.item.Block.from_chunk(block, items_data=items_data)
+                        for block_info in row:
+                            block = alltheitems.item.Block.from_chunk(block_info, items_data=items_data)
                             block_counts[block] += 1
         print(flush=True)
     print('counting player inventories', end='\r', flush=True)

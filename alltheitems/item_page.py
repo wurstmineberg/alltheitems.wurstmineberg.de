@@ -5,6 +5,7 @@ import bottle
 
 import alltheitems.cloud
 import alltheitems.item
+import alltheitems.util
 
 def is_int_str(s):
     try:
@@ -175,7 +176,7 @@ def item_page(item_stub, block=False):
                     <h2>Latency-induced Atomic Genesis</h2>
                     <p><a href="//wiki.{{host}}/Latency-induced_Atomic_Genesis">LAG</a> legality info coming <a href="//wiki.{{host}}/Soon™">soon™</a>.</p>
                 </div>
-            """, host=ati.host, ordinal=ati.ordinal, item_info=item_info, coords=coords, chest_state=lambda: alltheitems.cloud.chest_state(coords, item_stub, corridor_length, item_name), color_map=color_map) #TODO LAG info
+            """, host=ati.host, ordinal=alltheitems.util.ordinal, item_info=item_info, coords=coords, chest_state=lambda: alltheitems.cloud.chest_state(coords, item_stub, corridor_length, item_name), color_map=color_map) #TODO LAG info
         # obtaining
         yield bottle.template("""
             %import json
