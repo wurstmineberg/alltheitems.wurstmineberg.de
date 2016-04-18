@@ -188,11 +188,7 @@ class Item:
             if slot['Damage'] != self.stub['damage']:
                 return False
         if 'effect' in self.stub:
-            if 'tag' not in slot:
-                return False
-            if 'Potion' not in slot['tag']:
-                return False
-            if slot['tag']['Potion'] != self.stub['effect']:
+            if slot.get('tag', {}).get('Potion', 'minecraft:water') != self.stub['effect']:
                 return False
         if 'tagValue' in self.stub:
             if 'tag' in slot:
