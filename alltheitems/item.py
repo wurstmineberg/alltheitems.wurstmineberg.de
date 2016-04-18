@@ -137,7 +137,7 @@ class Item:
         elif data_type == 'damage':
             item_stub['damage'] = slot['Damage']
         elif data_type == 'effect':
-            item_stub['effect'] = slot['tag']['Potion']
+            item_stub['effect'] = slot.get('tag', {}).get('Potion', 'minecraft:water')
         elif data_type == 'tagValue':
             tag_path = items_data[plugin][string_id]['tagPath']
             try:
