@@ -105,7 +105,7 @@ if __name__ == '__main__':
             chunk_x = column['x']
             chunk_z = column['z']
             for chunk_y in range(16):
-                section = getattr(api.v2, 'api_chunk_info_{}'.format(dimension))(minecraft.World(), chunk_x, chunk_y, chunk_z)
+                section = api.v2.api_chunk_info(minecraft.World(), dimension, chunk_x, chunk_y, chunk_z)
                 for layer in section:
                     for row in layer:
                         for block_info in row:
