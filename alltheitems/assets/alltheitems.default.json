@@ -1,6 +1,6 @@
 {
-    "assets_root": "/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master",
-    "cache_root": "/opt/wurstmineberg/alltheitems-cache",
-    "document_root": "/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master",
+    "assetsRoot": "/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/master",
+    "cacheRoot": "/opt/wurstmineberg/alltheitems-cache",
+    "documentRoot": "/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/master",
     "host": "wurstmineberg.de"
 }

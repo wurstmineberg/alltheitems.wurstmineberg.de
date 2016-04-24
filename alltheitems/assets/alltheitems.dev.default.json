@@ -1,0 +1,6 @@
+{
+    "assetsRoot": "/opt/git/github.com/wurstmineberg/assets.wurstmineberg.de/branch/dev",
+    "cacheRoot": "/opt/wurstmineberg/dev-alltheitems-cache",
+    "documentRoot": "/opt/git/github.com/wurstmineberg/alltheitems.wurstmineberg.de/branch/dev",
+    "host": "dev.wurstmineberg.de"
+}

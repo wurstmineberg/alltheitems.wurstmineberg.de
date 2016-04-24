@@ -26,18 +26,18 @@ bottle.debug()
 
 
 CONFIG_TYPES = {
-    "assets_root": pathlib.Path,
-    "cache_root": pathlib.Path,
-    "document_root": pathlib.Path,
+    "assetsRoot": pathlib.Path,
+    "cacheRoot": pathlib.Path,
+    "documentRoot": pathlib.Path,
 }
 
 from wmb import get_config, from_assets
 
 CONFIG = get_config("alltheitems", base = from_assets(__file__), value_types = CONFIG_TYPES)
 
-assets_root = CONFIG["assets_root"]
-cache_root = CONFIG["cache_root"]
-document_root = CONFIG["document_root"]
+assets_root = CONFIG["assetsRoot"]
+cache_root = CONFIG["cacheRoot"]
+document_root = CONFIG["documentRoot"]
 host = CONFIG["host"]
 
 #TODO: restore this functionality
