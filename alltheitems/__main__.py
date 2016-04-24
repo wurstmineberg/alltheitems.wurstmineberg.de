@@ -31,7 +31,7 @@ CONFIG_TYPES = {
     "documentRoot": pathlib.Path,
 }
 
-from wmb import get_config, from_assets
+from wmb import get_config, from_assets, is_dev
 
 CONFIG = get_config("alltheitems", base = from_assets(__file__), value_types = CONFIG_TYPES)
 
@@ -52,7 +52,7 @@ import api.v2
 
 
 def header(*, title='All The Items'):
-    if is_dev:
+    if is_dev():
         title = '[DEV] ' + title
     return bottle.template("""<!DOCTYPE html>
     <html>
@@ -135,7 +135,7 @@ def footer(*, linkify_headers=False, additional_js=''):
                     transform: 'rotate(-10deg) scale(2)',
                     'z-index': 10
                 }).text('[DEV]'));
-    """ if is_dev else '') + additional_js + """
+    """ if is_dev() else '') + additional_js + """
             </script>
         </body>
     </html>
