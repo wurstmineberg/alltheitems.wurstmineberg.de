@@ -203,7 +203,7 @@ def global_error_checks(*, chunk_cache=None, block_at=alltheitems.world.World().
         with cache_path.open('w') as cache_f:
             json.dump(message, cache_f, sort_keys=True, indent=4)
 
-def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root):
+def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root):
     if stackable and has_sorter:
         # error check: overflow exists
         if not has_overflow:
@@ -261,6 +261,15 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
         is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
         if not is_connected:
             return 'Overflow hopper chain at {} is not connected to the Smelting Center item elevator at {}: {}.'.format(start, end, message)
+    if durability and has_smart_chest:
+        # error check: damaged or enchanted items in storage chests
+        let storage_containers = set(CONTAINERS) - {(5, 0, 2), (5, 0, 3)}
+        for container in storage_containers:
+            for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']:
+                if slot.get('Damage', 0) > 0:
+                    return 'Item in storage container at {} {} {} is damaged.'.format(*layer_coords(*container))
+                if len(slot.get('tag', {}).get('ench', [])) > 0:
+                    return 'Item in storage container at {} {} {} is enchanted.'.format(*layer_coords(*container))
     if exists and has_smart_chest:
         # error check: all blocks
         for layer_y, layer in smart_chest_schematic(document_root=document_root):
@@ -757,6 +766,8 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
     stackable = item.info().get('stackable', True)
     if not stackable and state[0] is None:
         state = 'cyan', "This SmartChest is in perfect state (but the item is not stackable, so it can't be sorted).", None
+    # does it have a durability bar?
+    durability = 'durability' in item.info()
     # does it have a sorter?
     has_sorter = False
     sorting_hopper = block_at(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, chunk_cache=chunk_cache)
@@ -798,7 +809,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         pass # cached check results are recent enough
     else:
         # cached check results are too old, recheck
-        message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root)
+        message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root)
         if ati.cache_root.exists():
             if str(y) not in cache:
                 cache[str(y)] = {}
