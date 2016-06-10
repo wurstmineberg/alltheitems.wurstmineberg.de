@@ -263,7 +263,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
             return 'Overflow hopper chain at {} is not connected to the Smelting Center item elevator at {}: {}.'.format(start, end, message)
     if durability and has_smart_chest:
         # error check: damaged or enchanted items in storage chests
-        let storage_containers = set(CONTAINERS) - {(5, 0, 2), (5, 0, 3)}
+        storage_containers = set(CONTAINERS) - {(5, 0, 2), (5, 0, 3)}
         for container in storage_containers:
             for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']:
                 if slot.get('Damage', 0) > 0:
