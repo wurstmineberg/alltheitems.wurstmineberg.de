@@ -261,15 +261,6 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
         is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
         if not is_connected:
             return 'Overflow hopper chain at {} is not connected to the Smelting Center item elevator at {}: {}.'.format(start, end, message)
-    if durability and has_smart_chest:
-        # error check: damaged or enchanted items in storage chests
-        storage_containers = set(CONTAINERS) - {(5, 0, 2), (5, 0, 3)}
-        for container in storage_containers:
-            for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']:
-                if slot.get('Damage', 0) > 0:
-                    return 'Item in storage container at {} {} {} is damaged.'.format(*layer_coords(*container))
-                if len(slot.get('tag', {}).get('ench', [])) > 0:
-                    return 'Item in storage container at {} {} {} is enchanted.'.format(*layer_coords(*container))
     if exists and has_smart_chest:
         # error check: all blocks
         for layer_y, layer in smart_chest_schematic(document_root=document_root):
@@ -697,6 +688,15 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
         bottom_dropper_fill_level = alltheitems.item.comparator_signal(block_at(*layer_coords(5, -7, 3), chunk_cache=chunk_cache))
         if access_chest_fill_level < 2 and bottom_dropper_fill_level > 2:
             return 'Access chest is {}empty but there are items stuck in the storage dropper at {} {} {}.'.format('' if access_chest_fill_level == 0 else 'almost ', *layer_coords(5, -7, 3))
+    if durability and has_smart_chest:
+        # error check: damaged or enchanted tools in storage chests
+        storage_containers = set(CONTAINERS) - {(5, 0, 2), (5, 0, 3)}
+        for container in storage_containers:
+            for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']:
+                if slot.get('Damage', 0) > 0:
+                    return 'Item in storage container at {} {} {} is damaged.'.format(*layer_coords(*container))
+                if len(slot.get('tag', {}).get('ench', [])) > 0:
+                    return 'Item in storage container at {} {} {} is enchanted.'.format(*layer_coords(*container))
 
 def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None, allow_cache=True):
     if items_data is None:
