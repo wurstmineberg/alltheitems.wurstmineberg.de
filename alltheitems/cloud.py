@@ -431,6 +431,10 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                         # glowstone
                         if block['id'] != 'minecraft:glowstone':
                             return 'Block at {} {} {} should be glowstone, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
+                    elif block_symbol == 'H':
+                        # hopper, any facing
+                        if block['id'] != 'minecraft:hopper':
+                            return 'Block at {} {} {} should be a hopper, is {}.'.format(exact_x, exact_y, exact_z, block['id'])
                     elif block_symbol == 'N':
                         # overflow hopper chain pointing north
                         if y > 1 and (z == 0 or z == 1):
