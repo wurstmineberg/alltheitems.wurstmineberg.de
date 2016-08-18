@@ -206,6 +206,7 @@ class Item:
                     return False
         return True
 
+    @property
     def max_stack_size(self):
         result = self.info().get('stackable', True)
         if isinstance(result, bool):
@@ -281,7 +282,7 @@ def comparator_signal(block, other_block=None, *, items_data=None):
         assert other_block['id'] in ('minecraft:chest', 'minecraft:trapped_chest')
         def fullness(slot):
             item = Item.from_slot(slot, items_data=items_data)
-            return slot['Count'] / item.max_stack_size()
+            return slot['Count'] / item.max_stack_size
 
         inventory = block['tileEntity']['Items'] + other_block['tileEntity']['Items']
         if sum(item['Count'] for item in inventory) == 0:
@@ -290,7 +291,7 @@ def comparator_signal(block, other_block=None, *, items_data=None):
     elif block['id'] in NUM_SLOTS:
         def fullness(slot):
             item = Item.from_slot(slot, items_data=items_data)
-            return slot['Count'] / item.max_stack_size()
+            return slot['Count'] / item.max_stack_size
 
         inventory = block['tileEntity']['Items']
         if sum(item['Count'] for item in inventory) == 0:
