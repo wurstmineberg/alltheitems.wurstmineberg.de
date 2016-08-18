@@ -203,7 +203,7 @@ def global_error_checks(*, chunk_cache=None, block_at=alltheitems.world.World().
         with cache_path.open('w') as cache_f:
             json.dump(message, cache_f, sort_keys=True, indent=4)
 
-def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root):
+def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root):
     if stackable and has_sorter:
         # error check: overflow exists
         if not has_overflow:
@@ -223,13 +223,13 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
         for slot in sorting_hopper['tileEntity']['Items']:
             empty_slots.remove(slot['Slot'])
             if slot['Slot'] == 0 and stackable:
-                if not item.matches_slot(slot) and not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
+                if not item.matches_slot(slot) and not filler_item.matches_slot(slot):
                     return 'Sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
             else:
-                if not alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
-                    return 'Sorting hopper has wrong filler item in slot {}: {} (should be an Ender pearl).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                if not filler_item.matches_slot(slot):
+                    return 'Sorting hopper has wrong filler item in slot {}: {} (should be {}).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text(), filler_item.link_text())
                 if slot['Count'] > 1:
-                    return 'Too many Ender pearls in slot {}.'.format(slot['Slot'])
+                    return 'Too much {} in slot {}.'.format(filler_item.link_text(), slot['Slot'])
         if len(empty_slots) > 0:
             if len(empty_slots) == 5:
                 return 'Sorting hopper is empty.'
@@ -774,15 +774,19 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
     durability = 'durability' in item.info()
     # does it have a sorter?
     has_sorter = False
+    if item == 'minecraft:crafting_table' or stackable and stackable < 64:
+        filler_item = alltheitems.item.Item('minecraft:crafting_table', items_data=items_data)
+    else:
+        filler_item = alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data)
     sorting_hopper = block_at(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, chunk_cache=chunk_cache)
     if sorting_hopper['id'] != 'minecraft:hopper':
         if state[0] is None:
             state = 'yellow', 'Sorting hopper does not exist, is {}.'.format(sorting_hopper['id']), None
     else:
         for slot in sorting_hopper['tileEntity']['Items']:
-            if slot['Slot'] == 0 and stackable and not item.matches_slot(slot) and alltheitems.item.Item('minecraft:ender_pearl', items_data=items_data).matches_slot(slot):
+            if slot['Slot'] == 0 and stackable and not item.matches_slot(slot) and filler_item.matches_slot(slot):
                 if state[0] is None or state[0] == 'cyan':
-                    state = 'yellow', 'Sorting hopper is full of Ender pearls, but the sorted item is stackable, so the first slot should contain the item.', None
+                    state = 'yellow', 'Sorting hopper is full of {}, but the sorted item is stackable, so the first slot should contain the item.'.format(filler_item.link_text()), None
                 break
         else:
             has_sorter = True
@@ -813,7 +817,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         pass # cached check results are recent enough
     else:
         # cached check results are too old, recheck
-        message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root)
+        message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root)
         if ati.cache_root.exists():
             if str(y) not in cache:
                 cache[str(y)] = {}
