@@ -194,7 +194,7 @@ def global_error_checks(*, chunk_cache=None, block_at=alltheitems.world.World().
     if chunk_cache is None:
         chunk_cache = {}
     # error check: input hopper chain
-    start = 15, 61, 30 # the last point where the Soup channel for the Cloud merges
+    start = 14, 61, 32 # the first hopper after the buffer elevator
     end = -1, 25, 52 # the half of the uppermost overflow chest into which the hopper chain is pointing
     is_connected, message = hopper_chain_connected(start, end, chunk_cache=chunk_cache, block_at=block_at)
     if not is_connected:
