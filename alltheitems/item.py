@@ -155,7 +155,7 @@ class Item:
 
     def info(self):
         plugin_id, item_name = self.stub['id'].split(':', 1)
-        item_info = self.item_info[plugin_id, item_name].copy()
+        item_info = self.items_data[plugin_id][item_name].copy()
         if self.is_block and 'blockID' not in item_info:
             raise ValueError('There is no block with the ID {}. There is however an item with that ID.'.format(self.stub['id']))
         if not self.is_block and 'itemID' not in item_info:
