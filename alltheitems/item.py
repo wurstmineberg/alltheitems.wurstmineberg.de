@@ -364,15 +364,22 @@ def linkify(plugin, string_id, html, link, *, block=False):
 def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
     if classes is None:
         classes = []
+    else:
+        classes = classes.copy()
     if block and 'blockInfo' in item_info:
         item_info = item_info.copy()
         item_info.update(item_info['blockInfo'])
         del item_info['blockInfo']
     if 'image' in item_info:
+        image_info = item_info['image']
+        if isinstance(image_info, str):
+            image_info = {'prerendered': image_info}
+        if image_info.get('nearestNeighbor', False):
+            classes.append('nearest-neighbor')
         if tint is None:
-            ret = '<img src="//assets.{host}/img/grid/{}" class="{}" style="{}" />'.format(item_info['image'], ' '.join(classes), style, host=ati.host)
+            ret = '<img src="//assets.{host}/img/grid/{}" class="{}" style="{}" />'.format(image_info['prerendered'], ' '.join(classes), style, host=ati.host)
         else:
-            ret = '<img style="background: url(//api.{host}/v2/minecraft/items/render/dyed-by-id/{}/{}/{:06x}.png)" src="//assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(plugin, item_id, tint, item_info['image'], ' '.join(classes), style, host=ati.host)
+            ret = '<img style="background: url(//api.{host}/v2/minecraft/items/render/dyed-by-id/{}/{}/{:06x}.png)" src="//assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(plugin, item_id, tint, image_info['prerendered'], ' '.join(classes), style, host=ati.host)
     else:
         ret = '<img src="//assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=ati.host)
     if tooltip:
