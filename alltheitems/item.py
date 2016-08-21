@@ -1,6 +1,5 @@
 import alltheitems.__main__ as ati
 
-import api.v2
 import enum
 import functools
 import json
@@ -155,7 +154,62 @@ class Item:
         return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=self.link(link), tooltip=tooltip)
 
     def info(self):
-        return info_from_stub(self.stub, block=self.is_block)
+        plugin_id, item_name = self.stub['id'].split(':', 1)
+        item_info = self.item_info[plugin_id, item_name].copy()
+        if self.is_block and 'blockID' not in item_info:
+            raise ValueError('There is no block with the ID {}. There is however an item with that ID.'.format(self.stub['id']))
+        if not self.is_block and 'itemID' not in item_info:
+            raise ValueError('There is no item with the ID {}. There is however a block with that ID.'.format(self.stub['id']))
+        if 'damage' in self.stub:
+            if 'effect' in self.stub:
+                raise ValueError('Tried to make an info page for {} with both damage and effect.'.format('a block' if self.is_block else 'an item'))
+            elif 'tagValue' in self.stub:
+                raise ValueError('Tried to make an info page for {} with both damage and tag.'.format('a block' if self.is_block else 'an item'))
+            elif 'damageValues' in item_info:
+                if str(self.stub['damage']) in item_info['damageValues']:
+                    item_info.update(item_info['damageValues'][str(self.stub['damage'])])
+                    del item_info['damageValues']
+                else:
+                    raise ValueError('The {} {} does not occur with the damage value {}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['damage']))
+            else:
+                raise ValueError('The {} {} has no damage values.'.format('block' if self.is_block else 'item', self.stub['id']))
+        elif 'effect' in self.stub:
+            effect_plugin, effect_id = self.stub['effect'].split(':')
+            if 'tagValue' in self.stub:
+                raise ValueError('Tried to make an info page for {} with both effect and tag.'.format('a block' if self.is_block else 'an item'))
+            elif 'effects' in item_info:
+                if effect_plugin in item_info['effects'] and effect_id in item_info['effects'][effect_plugin]:
+                    item_info.update(item_info['effects'][effect_plugin][effect_id])
+                    del item_info['effects']
+                else:
+                    raise ValueError('The {} {} does not occur with the effect {}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['effect']))
+            else:
+                raise ValueError('The {} {} has no effect values.'.format('block' if self.is_block else 'item', self.stub['id']))
+        elif 'tagValue' in self.stub:
+            if 'tagPath' in item_info:
+                if self.stub['tagValue'] is None:
+                    if '' in item_info['tagVariants']:
+                        item_info.update(item_info['tagVariants'][''])
+                        del item_info['tagPath']
+                        del item_info['tagVariants']
+                    else:
+                        raise ValueError('The {} {} does not occur with the empty tag variant.'.format('block' if self.is_block else 'item', self.stub['id']))
+                else:
+                    if str(self.stub['tagValue']) in item_info['tagVariants']:
+                        item_info.update(item_info['tagVariants'][str(self.stub['tagValue'])])
+                        del item_info['tagPath']
+                        del item_info['tagVariants']
+                    else:
+                        raise ValueError('The {} {} does not occur with the tag variant {}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['tagValue']))
+            else:
+                raise ValueError('The {} {} has no tag variants.'.format('block' if self.is_block else 'item', self.stub['id']))
+        elif 'damageValues' in item_info:
+            raise ValueError('Must specify damage')
+        elif 'effects' in item_info:
+            raise ValueError('Must specify effect')
+        elif 'tagPath' in item_info:
+            raise ValueError('Must specify tag value')
+        return item_info
 
     @property
     def is_block(self):
@@ -385,63 +439,6 @@ def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, st
     if tooltip:
         ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
     return linkify(plugin, string_id, ret, link, block=block)
-
-def info_from_stub(item_stub, block=False): #TODO take an optional items_data argument and remove API dependency
-    item_info = api.v2.api_item_by_id(*item_stub['id'].split(':', 1))
-    if block and 'blockID' not in item_info:
-        raise ValueError('There is no block with the ID {}. There is however an item with that ID.'.format(item_stub['id']))
-    if not block and 'itemID' not in item_info:
-        raise ValueError('There is no item with the ID {}. There is however a block with that ID.'.format(item_stub['id']))
-    if 'damage' in item_stub:
-        if 'effect' in item_stub:
-            raise ValueError('Tried to make an info page for {} with both damage and effect.'.format('a block' if block else 'an item'))
-        elif 'tagValue' in item_stub:
-            raise ValueError('Tried to make an info page for {} with both damage and tag.'.format('a block' if block else 'an item'))
-        elif 'damageValues' in item_info:
-            if str(item_stub['damage']) in item_info['damageValues']:
-                item_info.update(item_info['damageValues'][str(item_stub['damage'])])
-                del item_info['damageValues']
-            else:
-                raise ValueError('The {} {} does not occur with the damage value {}.'.format('block' if block else 'item', item_stub['id'], item_stub['damage']))
-        else:
-            raise ValueError('The {} {} has no damage values.'.format('block' if block else 'item', item_stub['id']))
-    elif 'effect' in item_stub:
-        effect_plugin, effect_id = item_stub['effect'].split(':')
-        if 'tagValue' in item_stub:
-            raise ValueError('Tried to make an info page for {} with both effect and tag.'.format('a block' if block else 'an item'))
-        elif 'effects' in item_info:
-            if effect_plugin in item_info['effects'] and effect_id in item_info['effects'][effect_plugin]:
-                item_info.update(item_info['effects'][effect_plugin][effect_id])
-                del item_info['effects']
-            else:
-                raise ValueError('The {} {} does not occur with the effect {}.'.format('block' if block else 'item', item_stub['id'], item_stub['effect']))
-        else:
-            raise ValueError('The {} {} has no effect values.'.format('block' if block else 'item', item_stub['id']))
-    elif 'tagValue' in item_stub:
-        if 'tagPath' in item_info:
-            if item_stub['tagValue'] is None:
-                if '' in item_info['tagVariants']:
-                    item_info.update(item_info['tagVariants'][''])
-                    del item_info['tagPath']
-                    del item_info['tagVariants']
-                else:
-                    raise ValueError('The {} {} does not occur with the empty tag variant.'.format('block' if block else 'item', item_stub['id']))
-            else:
-                if str(item_stub['tagValue']) in item_info['tagVariants']:
-                    item_info.update(item_info['tagVariants'][str(item_stub['tagValue'])])
-                    del item_info['tagPath']
-                    del item_info['tagVariants']
-                else:
-                    raise ValueError('The {} {} does not occur with the tag variant {}.'.format('block' if block else 'item', item_stub['id'], item_stub['tagValue']))
-        else:
-            raise ValueError('The {} {} has no tag variants.'.format('block' if block else 'item', item_stub['id']))
-    elif 'damageValues' in item_info:
-        raise ValueError('Must specify damage')
-    elif 'effects' in item_info:
-        raise ValueError('Must specify effect')
-    elif 'tagPath' in item_info:
-        raise ValueError('Must specify tag value')
-    return item_info
 
 def all(items_data=None):
     """Yields (Block, Item) tuples for each distinct type of block and item. Yields (NoneType, Item) for non-block items, and (Block, NoneType) for non-item blocks."""
