@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 
 setup(name='alltheitems.wurstmineberg.de',
-      version='1.0',
       description='a searchable web frontend for items.json',
       author='Wurstmineberg',
       author_email='mail@wurstmineberg.de',
       packages=["alltheitems"],
+      use_scm_version = {
+            "write_to": "alltheitems/version.py",
+          },
+      setup_requires=["setuptools_scm"],
       package_data={"alltheitems": ["assets/*.json"]}
      )
 
