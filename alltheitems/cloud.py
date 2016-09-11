@@ -837,7 +837,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             (5, 0, 2),
             (5, 0, 3)
         ]
-        total_items = sum(max(0, sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items']) - (4 * item.max_stack_size if container == (5, -7, 3) else 0)) for container in containers) # Don't count the 4 stacks of items that are stuck in the bottom dropper
+        total_items = sum(max(0, sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items'] if slot.get('Damage', 0) == 0 or not durability) - (4 * item.max_stack_size if container == (5, -7, 3) else 0)) for container in containers) # Don't count the 4 stacks of items that are stuck in the bottom dropper. Don't count damaged tools.
         max_slots = sum(alltheitems.item.NUM_SLOTS[block_at(*layer_coords(*container), chunk_cache=chunk_cache)['id']] for container in containers) - (0 if state[0] == 'orange' else 4)
         return state[0], state[1], FillLevel(item.max_stack_size, total_items, max_slots, is_smart_chest=state[0] in (None, 'cyan'))
     return state
