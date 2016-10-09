@@ -833,13 +833,30 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         return 'red', message, None
     # no errors, determine fill level
     if state[0] in (None, 'cyan', 'orange', 'yellow'):
-        containers = CONTAINERS if state[0] in (None, 'cyan') else [ # layer coords of the access chest
-            (5, 0, 2),
-            (5, 0, 3)
-        ]
-        total_items = sum(max(0, sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items'] if slot.get('Damage', 0) == 0 or not durability) - (4 * item.max_stack_size if container == (5, -7, 3) else 0)) for container in containers) # Don't count the 4 stacks of items that are stuck in the bottom dropper. Don't count damaged tools.
-        max_slots = sum(alltheitems.item.NUM_SLOTS[block_at(*layer_coords(*container), chunk_cache=chunk_cache)['id']] for container in containers) - (0 if state[0] == 'orange' else 4)
-        return state[0], state[1], FillLevel(item.max_stack_size, total_items, max_slots, is_smart_chest=state[0] in (None, 'cyan'))
+        try:
+            containers = CONTAINERS if state[0] in (None, 'cyan') else [ # layer coords of the access chest
+                (5, 0, 2),
+                (5, 0, 3)
+            ]
+            total_items = sum(max(0, sum(slot['Count'] for slot in block_at(*layer_coords(*container), chunk_cache=chunk_cache)['tileEntity']['Items'] if slot.get('Damage', 0) == 0 or not durability) - (4 * item.max_stack_size if container == (5, -7, 3) else 0)) for container in containers) # Don't count the 4 stacks of items that are stuck in the bottom dropper. Don't count damaged tools.
+            max_slots = sum(alltheitems.item.NUM_SLOTS[block_at(*layer_coords(*container), chunk_cache=chunk_cache)['id']] for container in containers) - (0 if state[0] == 'orange' else 4)
+            return state[0], state[1], FillLevel(item.max_stack_size, total_items, max_slots, is_smart_chest=state[0] in (None, 'cyan'))
+        except:
+            # something went wrong determining fill level, re-check errors
+            message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root)
+            if ati.cache_root.exists():
+                if str(y) not in cache:
+                    cache[str(y)] = {}
+                if str(x) not in cache[str(y)]:
+                    cache[str(y)][str(x)] = {}
+                cache[str(y)][str(x)][str(z)] = {
+                    'errorMessage': message,
+                    'timestamp': datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+                }
+                with cache_path.open('w') as cache_f:
+                    json.dump(cache, cache_f, sort_keys=True, indent=4)
+            if message is None:
+                raise
     return state
 
 def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None, cache=None, allow_cache=True):
