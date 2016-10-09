@@ -857,6 +857,8 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                     json.dump(cache, cache_f, sort_keys=True, indent=4)
             if message is None:
                 raise
+            else:
+                return 'red', message, None
     return state
 
 def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None, cache=None, allow_cache=True):
