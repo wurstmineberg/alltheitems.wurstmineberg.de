@@ -50,6 +50,8 @@ class Item:
             'amount'
         }
         self.stub = {key: value for key, value in self.stub.items() if key in allowed_keys}
+        if 'tagValue' in self.stub:
+            self.stub['tagValue'] = str(self.stub['tagValue'])
         if items_data is None:
             with (ati.assets_root / 'json' / 'items.json').open() as items_file:
                 self.items_data = json.load(items_file)
