@@ -895,8 +895,13 @@ def index(allow_cache=True):
             items_data = json.load(items_file)
         cache_path = ati.cache_root / 'cloud-chests.json'
         if cache_path.exists():
-            with cache_path.open() as cache_f:
-                cache = json.load(cache_f)
+            try:
+                with cache_path.open() as cache_f:
+                    cache = json.load(cache_f)
+            except ValueError:
+                # cache JSON is corrupted, probably because of a full disk, try without cache
+                cache_path.unlink()
+                cache = None
         else:
             cache = None
         colors_to_explain = set()
@@ -1024,8 +1029,13 @@ def todo():
             items_data = json.load(items_file)
         cache_path = ati.cache_root / 'cloud-chests.json'
         if cache_path.exists():
-            with cache_path.open() as cache_f:
-                cache = json.load(cache_f)
+            try:
+                with cache_path.open() as cache_f:
+                    cache = json.load(cache_f)
+            except ValueError:
+                # cache JSON is corrupted, probably because of a full disk, try without cache
+                cache_path.unlink()
+                cache = None
         else:
             cache = None
         states = {}
