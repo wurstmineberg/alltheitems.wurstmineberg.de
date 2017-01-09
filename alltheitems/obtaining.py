@@ -1,4 +1,5 @@
 import bottle
+import more_itertools
 
 import alltheitems.util
 
@@ -15,10 +16,11 @@ def method(name):
 def crafting_shaped(i, item_info, method, **kwargs):
     return bottle.template("""
         <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be crafted using the following recipe:</p>
-        {{!inventory_table(method['recipe'])}}
+        {{!inventory_table(chunked(method['recipe'], 3))}}
         %if method.get('outputAmount', 1) > 1:
             <p>This will create {{method['outputAmount']}} items per crafting process.</p>
-    """, i=i, inventory_table=alltheitems.util.inventory_table, item_info=item_info, method=method)
+        %end
+    """, chunked=more_itertools.chunked, i=i, inventory_table=alltheitems.util.inventory_table, item_info=item_info, method=method)
 
 def render(**kwargs):
     method_type = kwargs['method']['type']
