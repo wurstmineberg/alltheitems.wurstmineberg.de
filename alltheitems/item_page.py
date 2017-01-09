@@ -227,6 +227,8 @@ def item_page(item_stub, block=False):
                         <p>
                             %if i == 0:
                                 {{item_info['name']}} is unobtainable in Survival.
+                            %else:
+                                <hr />
                             %end
                             You can {{'obtain it' if i == 0 else 'also obtain ' + item_info['name']}} in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#setblock">setblock</a> &lt;x&gt; &lt;y&gt; &lt;x&gt; {{item_stub['id']}}{{' {}'.format(item_stub['damage']) if 'damage' in item_stub else ''}}</code>.
                         </p>
@@ -235,6 +237,8 @@ def item_page(item_stub, block=False):
                     <p>
                         %if i == 0:
                             {{item_info['name']}} is unobtainable in Survival.
+                        %else:
+                            <hr />
                         %end
                         You can {{'obtain it' if i == 0 else 'also obtain ' + item_info['name']}} in Creative using the command <code>/<a href="//minecraft.gamepedia.com/Commands#give">give</a> @p {{item_stub['id']}} {{'<amount> {}'.format(item_stub['damage']) if 'damage' in item_stub else '<amount> 0 {{Potion:"{}"}}'.format(item_stub['effect']) if 'effect' in item_stub else '<amount> 0 {' + ': {'.join(json.dumps(tag_path_elt) for tag_path_elt in tag_path) + ': ' + json.dumps(int(item_stub['tagValue']) if tag_values_are_ints else item_stub['tagValue']) + '}' * len(tag_path) if item_stub.get('tagValue') is not None else '[amount]'}}</code>.
                     </p>
