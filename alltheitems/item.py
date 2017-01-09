@@ -52,7 +52,9 @@ class Item:
         self.stub = {key: value for key, value in self.stub.items() if key in allowed_keys}
         if 'tagValue' in self.stub:
             self.stub['tagValue'] = str(self.stub['tagValue'])
-        if items_data is None:
+        if items_data is None and isinstance(item_stub, Item) and item_stub.items_data is not None:
+            self.items_data = item_stub.items_data
+        elif items_data is None:
             with (ati.assets_root / 'json' / 'items.json').open() as items_file:
                 self.items_data = json.load(items_file)
         else:
@@ -130,7 +132,13 @@ class Item:
 
     @classmethod
     def from_slot(cls, slot, *, items_data=None):
-        item_stub = {'id': slot['id']}
+        if items_data is None:
+            with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+                items_data = json.load(items_file)
+        item_stub = {
+            'id': slot['id'],
+            'count': slot['Count']
+        }
         plugin, string_id = slot['id'].split(':', 1)
         data_type = stub_data_type(plugin, string_id, items_data=items_data)
         if data_type is None:
@@ -152,8 +160,18 @@ class Item:
             raise NotImplementedError('Unknown data type: {!r}'.format(data_type))
         return cls(item_stub, items_data=items_data)
 
-    def image(self, link=True, tooltip=True):
-        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=self.link(link), tooltip=tooltip)
+    def image(self, link=True, tooltip=True, slot=False):
+        """Generates an image of this item.
+
+        Optional arguments:
+        link -- A link to add to the image, or False for no link. The default, True, generates a link to the item info page.
+        tooltip -- If true, a tooltip with the item name will be included. Defaults to True.
+        slot -- If true, the image will be rendered within an inventory slot box, displaying the count specified by the item stub in the bottom right corner (unless it is 1). Defaults to False.
+
+        Returns:
+        HTML code for displaying the specified image.
+        """
+        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=self.link(link), tooltip=tooltip, count=self.stub.get('count', 1) if slot else None)
 
     def info(self):
         plugin_id, item_name = self.stub['id'].split(':', 1)
@@ -397,13 +415,12 @@ def stub_data_type(plugin, string_id, *, items_data=None):
 def linkify(plugin, string_id, html, link, *, block=False):
     if link is False:
         return html
-    elif link is None or isinstance(link, int):
-        if link is None:
-            # base item
-            return '<a href="/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, html)
-        else:
-            # damage value
-            return '<a href="/{}/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link, html)
+    elif link is None:
+        # base item
+        return '<a href="/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, html)
+    elif isinstance(link, int):
+        # damage value
+        return '<a href="/{}/{}/{}/{}">{}</a>'.format('block' if block else 'item', plugin, string_id, link, html)
     elif isinstance(link, dict):
         if 'tagValue' in link:
             # tag variant
@@ -417,7 +434,7 @@ def linkify(plugin, string_id, html, link, *, block=False):
     else:
         return '<a href="{}">{}</a>'.format(link, html)
 
-def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False):
+def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, style='width: 32px;', block=False, link=False, tooltip=False, count=None, damage=0):
     if classes is None:
         classes = []
     else:
@@ -438,7 +455,21 @@ def image_from_info(plugin, string_id, item_info, *, classes=None, tint=None, st
             ret = '<img style="background: url(//api.{host}/v2/minecraft/items/render/dyed-by-id/{}/{}/{:06x}.png)" src="//assets.{host}/img/grid-overlay/{}" class="{}" style="{}" />'.format(plugin, item_id, tint, image_info['prerendered'], ' '.join(classes), style, host=ati.host)
     else:
         ret = '<img src="//assets.{host}/img/grid-unknown.png" class="{}" style="{}" />'.format(' '.join(classes), style, host=ati.host)
-    if tooltip:
+    if count is not None:
+        if damage > 0 and item_info.get('durability', 0) > 0:
+            durability_fraction = (item_info['durability'] - damage) / item_info['durability']
+            damage_html = '<div class="durability"><div style="background-color: hsl({}, 100%, 50%); width: {}px;"></div></div>'.format(int(durability * 120), int(durability * 14) * 2)
+        else:
+            damage_html = ''
+        if count == 1:
+            count_html = ''
+        else:
+            count_html = '<span class="count">{}</span>'.format(count)
+        if tooltip:
+            ret = '<div class="inv-cell-style use-tooltip" title="{}"><div class="inv-cell-image">{}</div>{}{}</div>'.format(item_info['name'], ret, damage_html, count_html)
+        else:
+            ret = '<div class="inv-cell-style"><div class="inv-cell-image">{}</div>{}{}</div>'.format(ret, damage_html, count_html)
+    elif tooltip:
         ret = '<span class="use-tooltip" title="{}">{}</span>'.format(item_info['name'], ret)
     return linkify(plugin, string_id, ret, link, block=block)
 

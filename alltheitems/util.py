@@ -1,4 +1,7 @@
+import alltheitems.__main__ as ati
+
 import enum
+import json
 import more_itertools
 
 class OrderedEnum(enum.Enum):
@@ -26,6 +29,34 @@ def format_num(number, ord=False):
     result = ''.join(list(reversed('\u202f'.join(''.join(l) for l in more_itertools.chunked(reversed(str(number)), 3)))))
     if ord:
         result += ordinal(number)
+    return result
+
+def inventory_table(rows, *, table_id=None, style=None, items_data=None):
+    import alltheitems.item
+
+    if items_data is None:
+        with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+            items_data = json.load(items_file)
+    result = '<table class="inventory-table"'
+    if table_id is not None:
+        result += ' id="{}"'.format(table_id)
+    if style is not None:
+        result += ' style="{}"'.format(style)
+    result += '>\n'
+    for row, cells in enumerate(rows):
+        result += '<tr class="inv-row inv-row-{}">\n'.format(row)
+        for col, cell in enumerate(row):
+            result += '<td class="inv-cell inv-cell-{}">\n'.format(col)
+            if isinstance(cell, dict) and 'Count' in cell:
+                item = alltheitems.item.Item.from_slot(cell)
+            elif isinstance(cell, dict) and 'count' in cell:
+                item = alltheitems.item.Item(cell)
+            else:
+                item = alltheitems.item.Item(cell)
+            result += item.image(slot=True)
+            result += '</td>\n'
+        result += '</tr>\n'
+    result += '</table>\n'
     return result
 
 def join(sequence, *, word='and', default=None):
