@@ -16,7 +16,7 @@ def method(name):
 def crafting_shaped(i, item_info, method, **kwargs):
     return bottle.template("""
         <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be crafted using the following recipe:</p>
-        {{!inventory_table(chunked(method['recipe'], 3))}}
+        {{!inventory_table(chunked(method['recipe'], 3), style={'margin-left': 'auto', 'margin-right': 'auto'})}}
         %if method.get('outputAmount', 1) > 1:
             <p>This will create {{method['outputAmount']}} items per crafting process.</p>
         %end

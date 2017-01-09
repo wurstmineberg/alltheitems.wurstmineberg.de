@@ -41,14 +41,18 @@ def inventory_table(rows, *, table_id=None, style=None, items_data=None):
     if table_id is not None:
         result += ' id="{}"'.format(table_id)
     if style is not None:
-        result += ' style="{}"'.format(style)
+        if isinstance(style, dict):
+            if len(style) > 0:
+                result += ' style="{}"'.format(' '.join('{}: {};'.format(k, v) for k, v in style.items()))
+        else:
+            result += ' style="{}"'.format(style)
     result += '>\n'
     for row, cells in enumerate(rows):
         result += '<tr class="inv-row inv-row-{}">\n'.format(row)
         for col, cell in enumerate(cells):
             result += '<td class="inv-cell inv-cell-{}">\n'.format(col)
             if cell is None:
-                result += '<div class="inv-cell-style"><div class="inv-cell-image"></div></div>'
+                result += '<div class="inv-cell-style"><div class="inv-cell-image"></div></div>\n'
             else:
                 if isinstance(cell, dict) and 'Count' in cell:
                     item = alltheitems.item.Item.from_slot(cell)
