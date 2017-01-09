@@ -47,13 +47,16 @@ def inventory_table(rows, *, table_id=None, style=None, items_data=None):
         result += '<tr class="inv-row inv-row-{}">\n'.format(row)
         for col, cell in enumerate(cells):
             result += '<td class="inv-cell inv-cell-{}">\n'.format(col)
-            if isinstance(cell, dict) and 'Count' in cell:
-                item = alltheitems.item.Item.from_slot(cell)
-            elif isinstance(cell, dict) and 'count' in cell:
-                item = alltheitems.item.Item(cell)
+            if cell is None:
+                result += '<div class="inv-cell-style"><div class="inv-cell-image"></div></div>'
             else:
-                item = alltheitems.item.Item(cell)
-            result += item.image(slot=True)
+                if isinstance(cell, dict) and 'Count' in cell:
+                    item = alltheitems.item.Item.from_slot(cell)
+                elif isinstance(cell, dict) and 'count' in cell:
+                    item = alltheitems.item.Item(cell)
+                else:
+                    item = alltheitems.item.Item(cell)
+                result += item.image(slot=True)
             result += '</td>\n'
         result += '</tr>\n'
     result += '</table>\n'
