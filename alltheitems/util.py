@@ -45,7 +45,7 @@ def inventory_table(rows, *, table_id=None, style=None, items_data=None):
     result += '>\n'
     for row, cells in enumerate(rows):
         result += '<tr class="inv-row inv-row-{}">\n'.format(row)
-        for col, cell in enumerate(row):
+        for col, cell in enumerate(cells):
             result += '<td class="inv-cell inv-cell-{}">\n'.format(col)
             if isinstance(cell, dict) and 'Count' in cell:
                 item = alltheitems.item.Item.from_slot(cell)
