@@ -5,6 +5,7 @@ import bottle
 
 import alltheitems.cloud
 import alltheitems.item
+import alltheitems.obtaining
 import alltheitems.util
 
 def is_int_str(s):
@@ -209,8 +210,7 @@ def item_page(item_stub, block=False):
                         %if i > 0:
                             <hr />
                         %end
-                        <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. It looks like this:</p>
-                        <pre style="text-align: left;">{{json.dumps(method, indent=4)}}</pre>
+                        {{!render_obtaining(i=i, item_info=item_info, method=method)}}
                         %i += 1
                     %end
                 %end
@@ -240,7 +240,7 @@ def item_page(item_stub, block=False):
                     </p>
                 %end
             </div>
-        """, Item=alltheitems.item.Item, Block=alltheitems.item.Block, normalize_item_info=normalize_item_info, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
+        """, Item=alltheitems.item.Item, Block=alltheitems.item.Block, normalize_item_info=normalize_item_info, render_obtaining=alltheitems.obtaining.render, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
         #TODO usage
         yield bottle.template("""
             <div id="section-usage" class="section hidden">
