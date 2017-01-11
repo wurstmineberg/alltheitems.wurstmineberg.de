@@ -228,7 +228,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
             for slot in pre_sorting_hopper['tileEntity']['Items']:
                 empty_slots.remove(slot['Slot'])
                 if slot['Slot'] == 0:
-                    if not item.matches_slot(slot) and not filler_item.matches_slot(slot):
+                    if not item.matches_slot(slot):
                         return 'Preliminary sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
                 else:
                     if not filler_item.matches_slot(slot):
