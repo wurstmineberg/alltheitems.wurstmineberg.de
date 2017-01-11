@@ -8,13 +8,6 @@ import alltheitems.item
 import alltheitems.obtaining
 import alltheitems.util
 
-def is_int_str(s):
-    try:
-        int(s)
-    except ValueError:
-        return False
-    return True
-
 def normalize_item_info(item_info, item_stub, block=False, *, tag_values_are_ints=False):
     if block:
         item_stub_image = lambda item_stub: alltheitems.item.Block(item_stub).image()
@@ -121,7 +114,7 @@ def item_page(item_stub, block=False):
         item_stub = {'id': item_stub}
     item_info = api.v2.api_item_by_id(*item_stub['id'].split(':', 1))
     tag_path = item_info.get('tagPath')
-    tag_values_are_ints = all(tag_value == '' or is_int_str(tag_value) for tag_value in item_info.get('tagVariants', []))
+    tag_values_are_ints = all(tag_value == '' or alltheitems.util.is_int_str(tag_value) for tag_value in item_info.get('tagVariants', []))
     disambig = normalize_item_info(item_info, item_stub, block=block, tag_values_are_ints=tag_values_are_ints)
     yield ati.header(title=item_info.get('name', item_stub['id']))
     if disambig:
@@ -244,7 +237,7 @@ def item_page(item_stub, block=False):
                     </p>
                 %end
             </div>
-        """, Item=alltheitems.item.Item, Block=alltheitems.item.Block, normalize_item_info=normalize_item_info, render_obtaining=alltheitems.obtaining.render, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
+        """, Item=alltheitems.item.Item, Block=alltheitems.item.Block, render_obtaining=alltheitems.obtaining.render, item_stub=item_stub, item_info=item_info, block=block, tag_path=tag_path, tag_values_are_ints=tag_values_are_ints)
         #TODO usage
         yield bottle.template("""
             <div id="section-usage" class="section hidden">

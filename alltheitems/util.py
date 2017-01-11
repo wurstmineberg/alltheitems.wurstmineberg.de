@@ -56,15 +56,20 @@ def inventory_table(rows, *, table_id=None, style=None, items_data=None):
             else:
                 if isinstance(cell, dict) and 'Count' in cell:
                     item = alltheitems.item.Item.from_slot(cell)
-                elif isinstance(cell, dict) and 'count' in cell:
-                    item = alltheitems.item.Item(cell)
                 else:
                     item = alltheitems.item.Item(cell)
-                result += item.image(slot=True)
+                result += item.specific_repr.image(slot=True)
             result += '</td>\n'
         result += '</tr>\n'
     result += '</table>\n'
     return result
+
+def is_int_str(s):
+    try:
+        int(s)
+    except ValueError:
+        return False
+    return True
 
 def join(sequence, *, word='and', default=None):
     sequence = [str(elt) for elt in sequence]

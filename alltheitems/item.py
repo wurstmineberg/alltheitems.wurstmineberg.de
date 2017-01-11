@@ -171,7 +171,7 @@ class Item:
         Returns:
         HTML code for displaying the specified image.
         """
-        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=self.link(link), tooltip=tooltip, count=self.stub.get('count', 1) if slot else None)
+        return image_from_info(self.stub['id'].split(':', 1)[0], self.stub['id'].split(':', 1)[1], self.info(), block=self.is_block, link=self.link(link), tooltip=tooltip, count=self.stub.get('amount', 1) if slot else None)
 
     def info(self):
         plugin_id, item_name = self.stub['id'].split(':', 1)
@@ -234,6 +234,20 @@ class Item:
     @property
     def is_block(self):
         return False
+
+    @property
+    def is_generic(self):
+        """Returns True if the item stub is missing damage/effect/tag value."""
+        plugin_id, item_name = self.stub['id'].split(':', 1)
+        item_info = self.items_data[plugin_id][item_name].copy()
+        if 'damageValues' in item_info:
+            return 'damage' not in self.stub
+        elif 'effects' in item_info:
+            return 'effect' not in self.stub
+        elif 'tagPath' in item_info:
+            return 'tagValue' not in self.stub
+        else:
+            return False
 
     def link(self, link=True):
         if link is True:
@@ -301,6 +315,44 @@ class Item:
         An instance of the Renewability enum.
         """
         raise NotImplementedError() #TODO
+
+    @property
+    def specific_repr(self):
+        """Returns a specific representation of a generic item (see is_generic)."""
+        if self.is_generic:
+            return next(self.variants())
+        else:
+            return self
+
+    def variants(self):
+        """Yields all possible damage/effect/tag variants of this item."""
+        def variant_item(variant_data):
+            result = {'id': self.stub['id']}
+            if 'amount' in self.stub:
+                result['amount'] = self.stub['amount']
+            if 'consumed' in self.stub:
+                result['consumed'] = self.stub['consumed']
+            result.update(variant_data)
+            return self.__class__(result, items_data=self.items_data)
+
+        plugin_id, item_name = self.stub['id'].split(':', 1)
+        item_info = self.items_data[plugin_id][item_name].copy()
+        if 'damageValues' in item_info:
+            for damage_value in sorted(int(damage) for damage in item_info['damageValues']):
+                yield variant_item({'damage': damage_value})
+        elif 'effects' in item_info:
+            effect in ('{}:{}'.format(effect_plugin, effect_id) for effect_plugin in sorted(item_info['effects']) for effect_id in sorted(item_info['effects'][effect_plugin])):
+                yield variant_item({'effect': effect})
+        elif 'tagPath' in item_info:
+            tag_values_are_ints = all(tag_value == '' or alltheitems.util.is_int_str(tag_value) for tag_value in item_info.get('tagVariants', []))
+            if tag_values_are_ints:
+                tag_values = sorted(((None if tag_value == '' else int(tag_value)) for tag_value in item_info['tagVariants']), key=lambda tag_value: -1 if tag_value is None else tag_value)
+            else:
+                tag_values = sorted(((None if tag_value == '' else tag_value) for tag_value in item_info['tagVariants']), key=lambda tag_value: '' if tag_value is None else tag_value)
+            for tag_value in tag_values:
+                yield variant_item({'tagValue': tag_value}
+        else:
+            yield self
 
 class Block(Item):
     @classmethod
