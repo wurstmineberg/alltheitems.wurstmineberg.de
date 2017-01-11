@@ -44,7 +44,7 @@ def render(**kwargs):
                 %import io, json, traceback
                 <p>There was an error rendering this obtaining method:</p>
                 <pre>{{e.__class__.__name__}}: {{e}}</pre>
-                <h2>Traceback:</h2>
+                <p>Traceback:</p>
                 %buf = io.StringIO()
                 %traceback.print_exc(file=buf)
                 <pre style="text-align: left;">{{buf.getvalue()}}</pre>
@@ -54,6 +54,6 @@ def render(**kwargs):
     else:
         return bottle.template("""
             %import json
-            <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. All The Items does not currently support rendering it, so here's the raw data::</p>
+            <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. All The Items does not currently support rendering it, so here's the raw data:</p>
             <pre style="text-align: left;">{{json.dumps(method, indent=4, sort_keys=True)}}</pre>
         """, **kwargs)
