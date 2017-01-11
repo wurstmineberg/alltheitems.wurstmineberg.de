@@ -37,10 +37,23 @@ def crafting_shapeless(i, item_info, method, **kwargs):
 def render(**kwargs):
     method_type = kwargs['method']['type']
     if method_type in METHODS:
-        return METHODS[method_type](**kwargs)
+        try:
+            return METHODS[method_type](**kwargs)
+        except Exception as e:
+            return bottle.template("""
+                %import io, json, traceback
+                <p>There was an error rendering this obtaining method:</p>
+                <pre>{{e.__class__.__name__}}: {{e}}</pre>
+                <h2>Traceback:</h2>
+                %buf = io.StringIO()
+                %traceback.print_exc(file=buf)
+                <pre style="text-align: left;">{{buf.getvalue()}}</pre>
+                <p>Sorry about that. Here's the raw method data:</p>
+                <pre style="text-align: left;">{{json.dumps(method, indent=4, sort_keys=True)}}</pre>
+            """, e=e, **kwargs)
     else:
         return bottle.template("""
             %import json
-            <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. It looks like this:</p>
+            <p>{{item_info['name']}} can {{'' if i == 0 else 'also '}}be obtained via a method called <code>{{method['type']}}</code> in the database. All The Items does not currently support rendering it, so here's the raw data::</p>
             <pre style="text-align: left;">{{json.dumps(method, indent=4, sort_keys=True)}}</pre>
         """, **kwargs)

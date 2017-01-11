@@ -152,7 +152,7 @@ def html_exceptions(content_iter):
             <h2>Traceback:</h2>
             %buf = io.StringIO()
             %traceback.print_exc(file=buf)
-            <pre>{{buf.getvalue()}}</pre>
+            <pre style="text-align: left;">{{buf.getvalue()}}</pre>
         """, e=e)
 
 ERROR_PAGE_TEMPLATE = """
@@ -169,7 +169,7 @@ ERROR_PAGE_TEMPLATE = """
     %end
     %if e.traceback:
         <h2>Traceback:</h2>
-        <pre>{{e.traceback}}</pre>
+        <pre style="text-align: left;">{{e.traceback}}</pre>
     %end
 """ + footer() + """
 %except ImportError:
