@@ -176,7 +176,7 @@ def chest_coords(item, *, include_meta=False):
     for x, corridor, y, _, z, chest in chest_iter():
         if item == chest:
             if include_meta:
-                return (x, y, z), len(corridor), None if isinstance(chest, str) else chest.get('name'), None if isinstance(chest str) else chest.get('sorter')
+                return (x, y, z), len(corridor), None if isinstance(chest, str) else chest.get('name'), None if isinstance(chest, str) else chest.get('sorter')
             else:
                 return x, y, z
     if include_meta:
