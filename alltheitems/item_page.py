@@ -145,7 +145,7 @@ def item_page(item_stub, block=False):
                 </div>
             """, host=ati.host) #TODO
         else:
-            coords, corridor_length, item_name = alltheitems.cloud.chest_coords(item_stub, include_meta=True)
+            coords, corridor_length, item_name, pre_sorter = alltheitems.cloud.chest_coords(item_stub, include_meta=True)
             color_map = {
                 'cyan': 'class="text-info"',
                 'gray': 'class="muted"',
@@ -170,7 +170,7 @@ def item_page(item_stub, block=False):
                     <h2>Latency-induced Atomic Genesis</h2>
                     <p><a href="//wiki.{{host}}/Latency-induced_Atomic_Genesis">LAG</a> legality info coming <a href="//wiki.{{host}}/Soon™">soon™</a>.</p>
                 </div>
-            """, host=ati.host, ordinal=alltheitems.util.ordinal, item_info=item_info, coords=coords, chest_state=lambda: alltheitems.cloud.chest_state(coords, item_stub, corridor_length, item_name), color_map=color_map) #TODO LAG info
+            """, host=ati.host, ordinal=alltheitems.util.ordinal, item_info=item_info, coords=coords, chest_state=lambda: alltheitems.cloud.chest_state(coords, item_stub, corridor_length, item_name, pre_sorter), color_map=color_map) #TODO LAG info
         # obtaining
         yield bottle.template("""
             %import json

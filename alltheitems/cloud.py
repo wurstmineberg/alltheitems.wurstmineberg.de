@@ -176,11 +176,11 @@ def chest_coords(item, *, include_meta=False):
     for x, corridor, y, _, z, chest in chest_iter():
         if item == chest:
             if include_meta:
-                return (x, y, z), len(corridor), None if isinstance(chest, str) else chest.get('name')
+                return (x, y, z), len(corridor), None if isinstance(chest, str) else chest.get('name'), None if isinstance(chest str) else chest.get('sorter')
             else:
                 return x, y, z
     if include_meta:
-        return None, 0, None
+        return None, 0, None, None
 
 def global_error_checks(*, chunk_cache=None, block_at=alltheitems.world.World().block_at):
     cache_path = ati.cache_root / 'cloud-globals.json'
@@ -203,7 +203,7 @@ def global_error_checks(*, chunk_cache=None, block_at=alltheitems.world.World().
         with cache_path.open('w') as cache_f:
             json.dump(message, cache_f, sort_keys=True, indent=4)
 
-def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root):
+def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, pre_sorter, layer_coords, block_at, items_data, chunk_cache, document_root):
     if stackable and has_sorter:
         # error check: overflow exists
         if not has_overflow:
@@ -215,10 +215,37 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                 return 'Overflow hopper at x={} does not exist, is {}.'.format(next(iter(missing_overflow_hoppers)), block_at(next(iter(missing_overflow_hoppers)), base_y - 7, base_z - 1)['id'])
             else:
                 return 'Missing overflow.'
+        # error check: pre-sorter for lower floors
+        if y > 4:
+            if pre_sorter is None:
+                return 'Preliminary sorter coordinate missing from cloud.json.'
+            pre_sorting_hopper = block_at(pre_sorter, 30, 52, chunk_cache=chunk_cache)
+            if pre_sorting_hopper['id'] != 'minecraft:hopper':
+                return 'Preliminary sorter is missing (should be at {} 30 52).'.format(pre_sorter)
+            if pre_sorting_hopper['damage'] != 3:
+                return 'Preliminary sorting hopper ({} 30 52) should be pointing south, but is facing {}.'.format(pre_sorter, HOPPER_FACINGS[pre_sorting_hopper['damage']])
+            empty_slots = set(range(5))
+            for slot in pre_sorting_hopper['tileEntity']['Items']:
+                empty_slots.remove(slot['Slot'])
+                if slot['Slot'] == 0:
+                    if not item.matches_slot(slot) and not filler_item.matches_slot(slot):
+                        return 'Preliminary sorting hopper is sorting the wrong item: {}.'.format(alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text())
+                else:
+                    if not filler_item.matches_slot(slot):
+                        return 'Preliminary sorting hopper has wrong filler item in slot {}: {} (should be {}).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text(), filler_item.link_text())
+                    if slot['Count'] > 1:
+                        return 'Preliminary sorting hopper: too much {} in slot {}.'.format(filler_item.link_text(), slot['Slot'])
+            if len(empty_slots) > 0:
+                if len(empty_slots) == 5:
+                    return 'Preliminary sorting hopper is empty.'
+                elif len(empty_slots) == 1:
+                    return 'Slot {} of the preliminary sorting hopper is empty.'.format(next(iter(empty_slots)))
+                else:
+                    return 'Some slots in the preliminary sorting hopper are empty: {}.'.format(alltheitems.util.join(empty_slots))
     if has_sorter:
         # error check: sorting hopper
         if sorting_hopper['damage'] != 2:
-            return 'Sorting hopper ({} {} {}) should be pointing north, but is facing {}.'.format(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, HOPPER_FACINGS[sorting_hopper['damage']], sorting_hopper['damage'])
+            return 'Sorting hopper ({} {} {}) should be pointing north, but is facing {}.'.format(base_x - 2 if z % 2 == 0 else base_x + 2, base_y - 3, base_z, HOPPER_FACINGS[sorting_hopper['damage']])
         empty_slots = set(range(5))
         for slot in sorting_hopper['tileEntity']['Items']:
             empty_slots.remove(slot['Slot'])
@@ -229,7 +256,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                 if not filler_item.matches_slot(slot):
                     return 'Sorting hopper has wrong filler item in slot {}: {} (should be {}).'.format(slot['Slot'], alltheitems.item.Item.from_slot(slot, items_data=items_data).link_text(), filler_item.link_text())
                 if slot['Count'] > 1:
-                    return 'Too much {} in slot {}.'.format(filler_item.link_text(), slot['Slot'])
+                    return 'Sorting hopper: too much {} in slot {}.'.format(filler_item.link_text(), slot['Slot'])
         if len(empty_slots) > 0:
             if len(empty_slots) == 5:
                 return 'Sorting hopper is empty.'
@@ -702,7 +729,7 @@ def chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists,
                 if len(slot.get('tag', {}).get('ench', [])) > 0:
                     return 'Item in storage container at {} {} {} is enchanted.'.format(*layer_coords(*container))
 
-def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None, allow_cache=True):
+def chest_state(coords, item_stub, corridor_length, item_name=None, pre_sorter=None, *, items_data=None, block_at=alltheitems.world.World().block_at, document_root=ati.document_root, chunk_cache=None, cache=None, allow_cache=True):
     if items_data is None:
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
@@ -817,7 +844,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
         pass # cached check results are recent enough
     else:
         # cached check results are too old, recheck
-        message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root)
+        message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, pre_sorter, layer_coords, block_at, items_data, chunk_cache, document_root)
         if ati.cache_root.exists():
             if str(y) not in cache:
                 cache[str(y)] = {}
@@ -843,7 +870,7 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
             return state[0], state[1], FillLevel(item.max_stack_size, total_items, max_slots, is_smart_chest=state[0] in (None, 'cyan'))
         except:
             # something went wrong determining fill level, re-check errors
-            message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, layer_coords, block_at, items_data, chunk_cache, document_root)
+            message = chest_error_checks(x, y, z, base_x, base_y, base_z, item, item_name, exists, stackable, durability, has_smart_chest, has_sorter, has_overflow, filler_item, sorting_hopper, missing_overflow_hoppers, north_half, south_half, corridor_length, g, layer_coords, block_at, items_data, chunk_cache, document_root)
             if ati.cache_root.exists():
                 if str(y) not in cache:
                     cache[str(y)] = {}
@@ -861,8 +888,8 @@ def chest_state(coords, item_stub, corridor_length, item_name=None, *, items_dat
                 return 'red', message, None
     return state
 
-def cell_from_chest(coords, item_stub, corridor_length, item_name=None, *, chunk_cache=None, items_data=None, colors_to_explain=None, cache=None, allow_cache=True):
-    color, state_message, fill_level = chest_state(coords, item_stub, corridor_length, item_name, items_data=items_data, chunk_cache=chunk_cache, cache=cache, allow_cache=allow_cache)
+def cell_from_chest(coords, item_stub, corridor_length, item_name=None, pre_sorter=None, *, chunk_cache=None, items_data=None, colors_to_explain=None, cache=None, allow_cache=True):
+    color, state_message, fill_level = chest_state(coords, item_stub, corridor_length, item_name, pre_sorter, items_data=items_data, chunk_cache=chunk_cache, cache=cache, allow_cache=allow_cache)
     if colors_to_explain is not None:
         colors_to_explain.add(color)
     if fill_level is None or fill_level.is_full():
@@ -914,13 +941,20 @@ def index(allow_cache=True):
                 if isinstance(item_stub, str):
                     item_stub = {'id': item_stub}
                     item_name = None
-                elif 'name' in item_stub:
-                    item_name = item_stub['name']
-                    item_stub = item_stub.copy()
-                    del item_stub['name']
+                    pre_sorter = None
                 else:
-                    item_name = None
-                return cell_from_chest(coords, item_stub, len(corridor), item_name, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data, cache=cache, allow_cache=allow_cache)
+                    item_stub = item_stub.copy()
+                    if 'name' in item_stub:
+                        item_name = item_stub['name']
+                        del item_stub['name']
+                    else:
+                        item_name = None
+                    if 'sorter' in item_stub:
+                        pre_sorter = item_stub['sorter']
+                        del item_stub['sorter']
+                    else:
+                        pre_sorter = None
+                return cell_from_chest(coords, item_stub, len(corridor), item_name, pre_sorter, chunk_cache=chunk_cache, colors_to_explain=colors_to_explain, items_data=items_data, cache=cache, allow_cache=allow_cache)
 
             yield bottle.template("""
                 %import itertools
@@ -1044,13 +1078,20 @@ def todo():
             if isinstance(item_stub, str):
                 item_stub = {'id': item_stub}
                 item_name = None
-            elif 'name' in item_stub:
-                item_name = item_stub['name']
-                item_stub = item_stub.copy()
-                del item_stub['name']
+                pre_sorter = None
             else:
-                item_name = None
-            color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, items_data=items_data, chunk_cache=chunk_cache, cache=cache)
+                item_stub = item_stub.copy()
+                if 'name' in item_stub:
+                    item_name = item_stub['name']
+                    del item_stub['name']
+                else:
+                    item_name = None
+                if 'sorter' in item_stub:
+                    pre_sorter = item_stub['sorter']
+                    del item_stub['sorter']
+                else:
+                    pre_sorter = None
+            color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, pre_sorter, items_data=items_data, chunk_cache=chunk_cache, cache=cache)
             if fill_level is None or not fill_level.is_full() or color not in (None, 'cyan'):
                 states[x, y, z] = color, state_message, fill_level, alltheitems.item.Item(item_stub, items_data=items_data)
         for coords, state in sorted(states.items(), key=priority):
