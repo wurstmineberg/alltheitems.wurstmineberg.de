@@ -50,7 +50,7 @@ class Item:
             'amount'
         }
         self.stub = {key: value for key, value in self.stub.items() if key in allowed_keys}
-        if 'tagValue' in self.stub:
+        if 'tagValue' in self.stub and self.stub['tagValue'] is not None:
             self.stub['tagValue'] = str(self.stub['tagValue'])
         if items_data is None and isinstance(item_stub, Item) and item_stub.items_data is not None:
             self.items_data = item_stub.items_data
