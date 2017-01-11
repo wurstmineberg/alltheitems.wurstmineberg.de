@@ -350,7 +350,7 @@ class Item:
             else:
                 tag_values = sorted(((None if tag_value == '' else tag_value) for tag_value in item_info['tagVariants']), key=lambda tag_value: '' if tag_value is None else tag_value)
             for tag_value in tag_values:
-                yield variant_item({'tagValue': tag_value}
+                yield variant_item({'tagValue': tag_value})
         else:
             yield self
 
