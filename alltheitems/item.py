@@ -341,7 +341,7 @@ class Item:
             for damage_value in sorted(int(damage) for damage in item_info['damageValues']):
                 yield variant_item({'damage': damage_value})
         elif 'effects' in item_info:
-            effect in ('{}:{}'.format(effect_plugin, effect_id) for effect_plugin in sorted(item_info['effects']) for effect_id in sorted(item_info['effects'][effect_plugin])):
+            for effect in ('{}:{}'.format(effect_plugin, effect_id) for effect_plugin in sorted(item_info['effects']) for effect_id in sorted(item_info['effects'][effect_plugin])):
                 yield variant_item({'effect': effect})
         elif 'tagPath' in item_info:
             tag_values_are_ints = all(tag_value == '' or alltheitems.util.is_int_str(tag_value) for tag_value in item_info.get('tagVariants', []))
