@@ -103,10 +103,13 @@ TORCH_FACINGS = {
 
 HTML_COLORS = {
     'cyan': '#0ff',
+    'cyan2': '#0ff',
     'gray': '#777',
     'red': '#f00',
     'orange': '#f70',
     'yellow': '#ff0',
+    'white': '#fff',
+    'white2': '#fff',
     None: 'transparent'
 }
 
@@ -1047,8 +1050,10 @@ def todo():
             ('gray', 'Missing chests'),
             ('orange', 'Missing SmartChests'),
             ('yellow', 'Missing sorters'),
-            ('cyan', 'Missing items (unstackable)'),
-            (None, 'Missing items (stackable)')
+            ('cyan', 'Empty SmartChests (unstackable)'),
+            ('white', 'Empty SmartChests (stackable)'),
+            ('cyan2', 'Missing items (unstackable)'),
+            ('white2', 'Missing items (stackable)')
         ])
         header_indexes = {color: i for i, color in enumerate(headers.keys())}
 
@@ -1092,7 +1097,11 @@ def todo():
                 else:
                     pre_sorter = None
             color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, pre_sorter, items_data=items_data, chunk_cache=chunk_cache, cache=cache)
-            if fill_level is None or not fill_level.is_full() or color not in (None, 'cyan'):
+            if color is None:
+                color = 'white'
+            if color in ('cyan', 'white') and not fill_level.is_empty():
+                color += '2'
+            if fill_level is None or not fill_level.is_full() or color not in ('cyan', 'white', 'cyan2', 'white2'):
                 states[x, y, z] = color, state_message, fill_level, alltheitems.item.Item(item_stub, items_data=items_data)
         for coords, state in sorted(states.items(), key=priority):
             x, y, z = coords
@@ -1100,8 +1109,8 @@ def todo():
             if color != current_color:
                 if current_color is not None:
                     yield '</tbody></table>'
-                yield bottle.template('<h2 id="{{color}}">{{header}}</h2>', color='white' if color is None else color, header=headers[color])
-                yield '<table class="todo-table table table-responsive"><thead><tr><th class="coord">X</th><th class="coord">Y</th><th class="coord">Z</th><th class="item-image">&nbsp;</th><th class="item-name">Item</th><th>{}</th></tr></thead><tbody>'.format('Fill Level' if color is None or color == 'cyan' else 'Info')
+                yield bottle.template('<h2 id="{{color}}">{{header}}</h2>', color=color, header=headers[color])
+                yield '<table class="todo-table table table-responsive"><thead><tr><th class="coord">X</th><th class="coord">Y</th><th class="coord">Z</th><th class="item-image">&nbsp;</th><th class="item-name">Item</th><th>{}</th></tr></thead><tbody>'.format('Fill Level' if color in ('cyan', 'white', 'cyan2', 'white2') else 'Info')
                 current_color = color
             yield bottle.template("""
                 <tr>
@@ -1110,7 +1119,7 @@ def todo():
                     <td class="coord">{{z}}</td>
                     <td class="item-image">{{!item.image()}}</td>
                     <td class="item-name">{{!item.link_text()}}</td>
-                    <td style="background-color: {{color}}">{{!fill_level if color in ('transparent', '#0ff') else state_message}}</td>
+                    <td style="background-color: {{color}}">{{!fill_level if color in ('#0ff', '#fff') else state_message}}</td>
                 </tr>
             """, x=x, y=y, z=z, item=item, color=HTML_COLORS[color], fill_level=fill_level, state_message=state_message)
         yield '</tbody></table>'
