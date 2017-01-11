@@ -224,11 +224,11 @@ class Item:
             else:
                 raise ValueError('The {} {} has no tag variants.'.format('block' if self.is_block else 'item', self.stub['id']))
         elif 'damageValues' in item_info:
-            raise ValueError('Must specify damage')
+            raise ValueError('Must specify damage for {}'.format(self.stub['id']))
         elif 'effects' in item_info:
-            raise ValueError('Must specify effect')
+            raise ValueError('Must specify effect for {}'.format(self.stub['id']))
         elif 'tagPath' in item_info:
-            raise ValueError('Must specify tag value')
+            raise ValueError('Must specify tag value for {}'.format(self.stub['id']))
         return item_info
 
     @property
@@ -273,8 +273,12 @@ class Item:
                         tag = tag[tag_path_elt]
                     except (KeyError, IndexError):
                         return False
-                if tag != self.stub['tagValue']:
-                    return False
+                if self.stub['tagValue'] is None:
+                    if tag is not None:
+                        return False
+                else:
+                    if str(tag) != self.stub['tagValue']:
+                        return False
             else:
                 if self.stub['tagValue'] is not None:
                     return False
