@@ -190,7 +190,7 @@ class Item:
                     item_info.update(item_info['damageValues'][str(self.stub['damage'])])
                     del item_info['damageValues']
                 else:
-                    raise ValueError('The {} {} does not occur with the damage value {}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['damage']))
+                    raise ValueError('The {} {} does not occur with the damage value {!r}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['damage']))
             else:
                 raise ValueError('The {} {} has no damage values.'.format('block' if self.is_block else 'item', self.stub['id']))
         elif 'effect' in self.stub:
@@ -202,7 +202,7 @@ class Item:
                     item_info.update(item_info['effects'][effect_plugin][effect_id])
                     del item_info['effects']
                 else:
-                    raise ValueError('The {} {} does not occur with the effect {}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['effect']))
+                    raise ValueError('The {} {} does not occur with the effect {!r}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['effect']))
             else:
                 raise ValueError('The {} {} has no effect values.'.format('block' if self.is_block else 'item', self.stub['id']))
         elif 'tagValue' in self.stub:
@@ -220,7 +220,7 @@ class Item:
                         del item_info['tagPath']
                         del item_info['tagVariants']
                     else:
-                        raise ValueError('The {} {} does not occur with the tag variant {}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['tagValue']))
+                        raise ValueError('The {} {} does not occur with the tag variant {!r}.'.format('block' if self.is_block else 'item', self.stub['id'], self.stub['tagValue']))
             else:
                 raise ValueError('The {} {} has no tag variants.'.format('block' if self.is_block else 'item', self.stub['id']))
         elif 'damageValues' in item_info:
