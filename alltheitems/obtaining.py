@@ -34,6 +34,10 @@ def crafting_shapeless(i, item_info, method, **kwargs):
         %end
     """, i=i, inventory_table=alltheitems.util.inventory_table, item_info=item_info, method=method)
 
+@method('special')
+def special(i, item_info, method, **kwargs):
+    return '<p>{}</p>'.format(method['description'])
+
 def render(**kwargs):
     method_type = kwargs['method']['type']
     if method_type in METHODS:
