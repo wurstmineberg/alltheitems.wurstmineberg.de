@@ -35,7 +35,7 @@ def crafting_shapeless(i, item_info, method, **kwargs):
     """, i=i, inventory_table=alltheitems.util.inventory_table, item_info=item_info, method=method)
 
 @method('special')
-def special(i, item_info, method, **kwargs):
+def special(method, **kwargs):
     return '<p>{}</p>'.format(method['description'])
 
 def render(**kwargs):
