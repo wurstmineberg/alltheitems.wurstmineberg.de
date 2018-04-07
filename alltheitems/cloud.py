@@ -49,6 +49,14 @@ class FillLevel:
     def stacks(self):
         return divmod(self.total_items, self.stack_size)
 
+    def to_json(self):
+        return {
+            'isSmartChest': self.is_smart_chest,
+            'maxSlots': self.max_slots,
+            'stackSize': self.stack_size,
+            'totalItems': self.total_items
+        }
+
 CONTAINERS = [ # layer coords of all counted container blocks in a SmartChest
     (3, -7, 3),
     (3, -7, 4),
@@ -900,6 +908,52 @@ def cell_from_chest(coords, item_stub, corridor_length, item_name=None, pre_sort
     else:
         return '<td style="background-color: {};">{}<div class="durability"><div style="background-color: #f0f; width: {}px;"></div></div></td>'.format(HTML_COLORS[color], alltheitems.item.Item(item_stub, items_data=items_data).image(), 0 if fill_level.is_empty() else 2 + int(fill_level.fraction * 13) * 2)
 
+def calculate_states(*, items_data=None, chunk_cache=None, cache=None):
+    states = {}
+    for x, corridor, y, _, z, item_stub in chest_iter():
+        if isinstance(item_stub, str):
+            item_stub = {'id': item_stub}
+            item_name = None
+            pre_sorter = None
+        else:
+            item_stub = item_stub.copy()
+            if 'name' in item_stub:
+                item_name = item_stub['name']
+                del item_stub['name']
+            else:
+                item_name = None
+            if 'sorter' in item_stub:
+                pre_sorter = item_stub['sorter']
+                del item_stub['sorter']
+            else:
+                pre_sorter = None
+        color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, pre_sorter, items_data=items_data, chunk_cache=chunk_cache, cache=cache)
+        if color is None:
+            color = 'white'
+        if color in ('cyan', 'white') and not fill_level.is_empty():
+            color += '2'
+        states[x, y, z] = color, state_message, fill_level, alltheitems.item.Item(item_stub, items_data=items_data)
+    return states
+
+headers = collections.OrderedDict([
+    ('red', 'Build errors'),
+    ('gray', 'Missing chests'),
+    ('orange', 'Missing SmartChests'),
+    ('yellow', 'Missing sorters'),
+    ('cyan', 'Empty SmartChests (unstackable)'),
+    ('white', 'Empty SmartChests (stackable)'),
+    ('cyan2', 'Missing items (unstackable)'),
+    ('white2', 'Missing items (stackable)')
+])
+
+header_indexes = {color: i for i, color in enumerate(headers.keys())}
+
+def priority(pair):
+    coords, state = pair
+    x, y, z = coords
+    color, _, fill_level, _ = state
+    return header_indexes[color], None if fill_level is None else fill_level.fraction * (-1 if color == 'orange' else 1), y * (-1 if color == 'orange' else 1), x if y % 2 == 0 else -x, z
+
 def index(allow_cache=True):
     yield ati.header(title='Cloud')
     def body():
@@ -1021,6 +1075,37 @@ def index(allow_cache=True):
     yield from ati.html_exceptions(body())
     yield ati.footer(linkify_headers=True)
 
+def json_data():
+    chunk_cache = {}
+    with (ati.assets_root / 'json' / 'items.json').open() as items_file:
+        items_data = json.load(items_file)
+    cache_path = ati.cache_root / 'cloud-chests.json'
+    if cache_path.exists():
+        try:
+            with cache_path.open() as cache_f:
+                cache = json.load(cache_f)
+        except ValueError:
+            # cache JSON is corrupted, probably because of a full disk, try without cache
+            cache_path.unlink()
+            cache = None
+    else:
+        cache = None
+    states = calculate_states(items_data=items_data, chunk_cache=chunk_cache, cache=cache)
+    result = []
+    for coords, state in sorted(states.items(), key=priority):
+        x, y, z = coords
+        color, state_message, fill_level, item = state
+        result.append({
+            'x': x,
+            'y': y,
+            'z': z,
+            'color': color,
+            'item': item.stub,
+            'stateMessage': state_message,
+            'fillLevel': fill_level.to_json()
+        })
+    return result
+
 def todo():
     yield ati.header(title='Cloud by priority')
     def body():
@@ -1045,24 +1130,6 @@ def todo():
             }
         </style>"""
 
-        headers = collections.OrderedDict([
-            ('red', 'Build errors'),
-            ('gray', 'Missing chests'),
-            ('orange', 'Missing SmartChests'),
-            ('yellow', 'Missing sorters'),
-            ('cyan', 'Empty SmartChests (unstackable)'),
-            ('white', 'Empty SmartChests (stackable)'),
-            ('cyan2', 'Missing items (unstackable)'),
-            ('white2', 'Missing items (stackable)')
-        ])
-        header_indexes = {color: i for i, color in enumerate(headers.keys())}
-
-        def priority(pair):
-            coords, state = pair
-            x, y, z = coords
-            color, _, fill_level, _ = state
-            return header_indexes[color], None if fill_level is None else fill_level.fraction * (-1 if color == 'orange' else 1), y * (-1 if color == 'orange' else 1), x if y % 2 == 0 else -x, z
-
         chunk_cache = {}
         with (ati.assets_root / 'json' / 'items.json').open() as items_file:
             items_data = json.load(items_file)
@@ -1077,32 +1144,8 @@ def todo():
                 cache = None
         else:
             cache = None
-        states = {}
+        states = calculate_states(items_data=items_data, chunk_cache=chunk_cache, cache=cache)
         current_color = None
-        for x, corridor, y, _, z, item_stub in chest_iter():
-            if isinstance(item_stub, str):
-                item_stub = {'id': item_stub}
-                item_name = None
-                pre_sorter = None
-            else:
-                item_stub = item_stub.copy()
-                if 'name' in item_stub:
-                    item_name = item_stub['name']
-                    del item_stub['name']
-                else:
-                    item_name = None
-                if 'sorter' in item_stub:
-                    pre_sorter = item_stub['sorter']
-                    del item_stub['sorter']
-                else:
-                    pre_sorter = None
-            color, state_message, fill_level = chest_state((x, y, z), item_stub, len(corridor), item_name, pre_sorter, items_data=items_data, chunk_cache=chunk_cache, cache=cache)
-            if color is None:
-                color = 'white'
-            if color in ('cyan', 'white') and not fill_level.is_empty():
-                color += '2'
-            if fill_level is None or not fill_level.is_full() or color not in ('cyan', 'white', 'cyan2', 'white2'):
-                states[x, y, z] = color, state_message, fill_level, alltheitems.item.Item(item_stub, items_data=items_data)
         for coords, state in sorted(states.items(), key=priority):
             x, y, z = coords
             color, state_message, fill_level, item = state
