@@ -213,6 +213,7 @@ def cloud_index():
 def cloud_json():
     """Cloud status in JSON format."""
     import alltheitems.cloud
+    bottle.response.content_type = 'application/json'
     return json.dumps(alltheitems.cloud.json_data(), indent=4, sort_keys=True)
 
 @application.route('/cloud/todo')
